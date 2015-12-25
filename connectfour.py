@@ -15,10 +15,12 @@ class Root_Node:
     def __init__(self):
         self.board = [0 for x in range(0, 42)]
         self.runs = {}
+        # how many squares to add to a location to move a certain direction on the grid
+        self.dmap = {0:6, 1:-1, 2:-8, 3:-7, 4:-6, 5:1, 6:8, 7:7}
         for i in range(0, 42):
-            #       2   3
-            #       1 A 4
-            #       0 6 5
+            #       2 3 4
+            #       1 A 5
+            #       0 7 6
         
             self.runs[i] = [0, 0, 0, 0, 0, 0, 0]
 
@@ -41,16 +43,15 @@ class Root_Node:
     def rows(self):
         return [self.board[i:i + 7] for i in range(0, len(self.board), 7)]
     def opposite(self, direction):
-        mapper = [0:4, 1:5, 2:6, 4:0, 5:1, 6:2]
+        mapper = [0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3]
         return mapper[direction]
     def update_direction(self, square, direction):
         current_loc = square
-        dmap = {0:6, 1:-1, 2:-8, 3:-6, 4:1, 5:8, 6:7}
         while True:
             current_loc += dmap[direction]
             if square in range(0, 42):
                 if self.board[i] == 0:
-                    self.runs[current][opposite]
+                    self.runs[current][self.opposite(direction)] += 1 * math.copysign(1, self.board[current_loc])
                     
                     if direction == 3:
                         if self.runs[current][3] == -3:
