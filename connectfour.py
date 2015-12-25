@@ -16,9 +16,9 @@ class Root_Node:
         self.board = [0 for x in range(0, 42)]
         self.runs = {}
         for i in range(0, 42):
-            #       2 3 4
-            #       1 A 5
-            #       0   6
+            #       2   3
+            #       1 A 4
+            #       0 6 5
         
             self.runs[i] = [0, 0, 0, 0, 0, 0, 0]
 
@@ -45,12 +45,12 @@ class Root_Node:
         return mapper[direction]
     def update_direction(self, square, direction):
         current_loc = square
-        dmap = {0:6, 1:-1, 2:-8, 3:-7, 4:-6: 5:1, 6:8}
+        dmap = {0:6, 1:-1, 2:-8, 3:-6, 4:1, 5:8, 6:7}
         while True:
+            current_loc += dmap[direction]
             if square in range(0, 42):
                 if self.board[i] == 0:
-
-                    
+                    self.runs[current][opposite]
                     
                     if direction == 3:
                         if self.runs[current][3] == -3:
@@ -75,8 +75,10 @@ class Root_Node:
                 if self.board[i] != self.board[square]:
                     break
                 else:
-                    current_loc += dmap[direction]
+                    pass
+                    # we are at an allied square, nothing to do except continue updating in the same direction
             else:
+                # we went out of bounds of the board
                 break
             
         
