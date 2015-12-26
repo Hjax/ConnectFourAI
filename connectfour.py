@@ -36,13 +36,14 @@ class Root_Node:
         while True:
             current_loc = path.next()
             if self.is_valid(current_loc):
-                if self.tuple_to_board_value(current_loc) == 0 or self.tuple_to_board_value(current_loc) == self.board[square[0]][square[1]]:
+                current_board_value = self.tuple_to_board_value(current_loc)
+                if current_board_value == 0 or current_board_value == self.board[square[0]][square[1]]:
                     # the following line might need to be just =
                     self.runs[current_loc][self.opposite[direction]] += self.tuple_to_board_value(square)
                     self.runs[current_loc][self.opposite[direction]] += self.runs[(current_loc[0] + self.dmap[self.opposite[direction]][0], current_loc[1] + self.dmap[self.opposite[direction]][1])][self.opposite[direction]]
                     # need to grab from both directions
                     
-                    if self.tuple_to_board_value(current_loc) == 0 :
+                    if current_board_value == 0 :
                         self.update_threats(current_loc, direction)
                         break # we break when we hit an enemy or blank block 
                 else:
