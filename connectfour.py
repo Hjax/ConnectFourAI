@@ -31,6 +31,7 @@ class Root_Node:
         for i in range(0, len(self.board[0]) * len(self.board)):
             if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
                 self.board[i / 7][i % 7] = -1
+    
     def update_direction(self, square, direction): # todo dont go down
         path = self.traverse(square, direction)
         current_loc = path.next()
@@ -62,13 +63,16 @@ class Root_Node:
     def traverse_step(self, location, direction):
         return (location[0] + self.dmap[direction][0], location[1] + self.dmap[direction][1])
     def is_valid(self, location):
-        return location[0] >= 0 and location[0] < 6 and location[1] >= 0 and location[1] < 7 # this can be made dramatically more efficent
+        return location[0] >= 0 and location[0] < 6 and location[1] >= 0 and location[1] < 7
     def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
-        if abs(self.runs[location][direction]) == 3:
+        # this might not work properly because of the elifs, should it always check both directions?
+        first_direction = self.runs[location][direction]
+        opposite_direction = self.runs[location][self.opposite[direction]]
+        if abs(first_direction) == 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-        elif abs(self.runs[location][self.opposite[direction]]) == 3:
+        if abs(opposite_direction) == 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite[direction]])]))
-        elif abs(self.runs[location][direction] + self.runs[location][self.opposite[direction]]) >= 3:
+        elif abs(first_direction + opposite_direction) >= 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     def valid_directions(self, a):
         return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
@@ -98,6 +102,7 @@ class Game:
         self.settings = []
     def set_setting(self, setting, value):
         self.settings[setting] = value
+"""
 for x in range(0, 3):
     foo = Root_Node()
     start = time.time()
@@ -109,6 +114,14 @@ for x in range(0, 3):
         else:
             foo.make_move(random.choice(foo.legal_moves()))
     print counter
+"""
+foo = Root_Node()
+while True:
+    move = int(raw_input())
+    foo.make_move(move)
+    foo.display_board()
+    print foo.threats
+
 """
 while True:
     break
