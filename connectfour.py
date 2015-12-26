@@ -36,10 +36,11 @@ class Root_Node:
         while True:
             current_loc = path.next()
             if self.is_valid(current_loc):
-                current_board_value = self.tuple_to_board_value(current_loc)
-                if current_board_value == 0 or current_board_value == self.board[square[0]][square[1]]:
+                current_board_value = self.board[current_loc[0]][current_loc[1]]
+                base_board_value = self.board[square[0]][square[1]]
+                if current_board_value == 0 or current_board_value == base_board_value:
                     # the following line might need to be just =
-                    self.runs[current_loc][self.opposite[direction]] += self.tuple_to_board_value(square)
+                    self.runs[current_loc][self.opposite[direction]] += base_board_value
                     self.runs[current_loc][self.opposite[direction]] += self.runs[(current_loc[0] + self.dmap[self.opposite[direction]][0], current_loc[1] + self.dmap[self.opposite[direction]][1])][self.opposite[direction]]
                     # need to grab from both directions
                     
@@ -53,8 +54,6 @@ class Root_Node:
                 # we went out of bounds of the board
                 break
     # HELPER FUNCTIONS FOR BOARD INTERACTION
-    def tuple_to_board_value(self, t):
-        return self.board[t[0]][t[1]]
     def number_to_board_value(self, n): # given a number (0-41) returns the value of that board location
         return self.board[n / 7][n % 7]
     def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
@@ -86,6 +85,7 @@ class Root_Node:
     def display_board(self):
         for row in self.board:
             print row
+    @profile
     def make_move(self, column):
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
