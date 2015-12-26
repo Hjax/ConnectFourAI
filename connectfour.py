@@ -1,4 +1,5 @@
-import math
+import math, random, time
+from profilehooks import profile
 
 foo = [0 for x in range(0, 42)]
 foo[5] = 1
@@ -43,17 +44,17 @@ class Root_Node:
         while True:
             current_loc = path.next()
             if self.is_valid(current_loc):
-                if self.tuple_to_board_value(current_loc) == 0:
+                if self.tuple_to_board_value(current_loc) == 0 or self.tuple_to_board_value(current_loc) == self.board[square[0]][square[1]]:
                     # the following line might need to be just =
                     self.runs[current_loc][self.opposite(direction)] += self.tuple_to_board_value(square)
                     self.runs[current_loc][self.opposite(direction)] += self.runs[(current_loc[0] + self.dmap[self.opposite(direction)][0], current_loc[1] + self.dmap[self.opposite(direction)][1])][self.opposite(direction)]
+                    # need to grab from both directions
                     self.update_threats(current_loc, direction)
-                    break # we break when we hit an enemy or blank block 
-                if self.board[current_loc[0]][current_loc[1]] != self.board[square[0]][square[1]]:
-                    break
+                    if self.tuple_to_board_value(current_loc) == 0 :
+                        break # we break when we hit an enemy or blank block 
                 else:
-                    pass
-                    # we are at an allied square, nothing to do except continue updating in the same direction
+                    break
+                    # we are at an enemy square, break
             else:
                 # we went out of bounds of the board
                 break
@@ -111,11 +112,15 @@ class Game:
         self.settings[setting] = value
 
 foo = Root_Node()
-while True:
-	var = int(raw_input())
-	foo.make_move(var)
-	foo.display_board()
-	print foo.threats
+start = time.time()
+counter = 0
+while time.time() - start < 5:
+    counter += 1
+    if len(foo.legal_moves()) == 0:
+        foo = Root_Node()
+    else:
+        foo.make_move(random.choice(foo.legal_moves()))
+print counter
 
 while True:
     break
