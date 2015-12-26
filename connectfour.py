@@ -32,27 +32,23 @@ class Root_Node:
             if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
                 self.board[i / 7][i % 7] = -1
     def update_direction(self, square, direction): # todo dont go down
-        path = self.traverse(square, direction) 
-        while True:
-            current_loc = path.next()
-            if self.is_valid(current_loc):
-                current_board_value = self.board[current_loc[0]][current_loc[1]]
-                base_board_value = self.board[square[0]][square[1]]
-                if current_board_value == 0 or current_board_value == base_board_value:
-                    # the following line might need to be just =
-                    self.runs[current_loc][self.opposite[direction]] += base_board_value
-                    self.runs[current_loc][self.opposite[direction]] += self.runs[(current_loc[0] + self.dmap[self.opposite[direction]][0], current_loc[1] + self.dmap[self.opposite[direction]][1])][self.opposite[direction]]
-                    # need to grab from both directions
-                    
-                    if current_board_value == 0 :
-                        self.update_threats(current_loc, direction)
-                        break # we break when we hit an enemy or blank block 
-                else:
-                    break
-                    # we are at an enemy square, break
+        path = self.traverse(square, direction)
+        current_loc = path.next()
+        base_board_value = self.board[square[0]][square[1]]
+        while self.is_valid(current_loc):
+            current_board_value = self.board[current_loc[0]][current_loc[1]]
+            if current_board_value == 0 or current_board_value == base_board_value:
+                # the following line might need to be just =
+                self.runs[current_loc][self.opposite[direction]] += base_board_value
+                self.runs[current_loc][self.opposite[direction]] += self.runs[(current_loc[0] + self.dmap[self.opposite[direction]][0], current_loc[1] + self.dmap[self.opposite[direction]][1])][self.opposite[direction]]
+                if current_board_value == 0 :
+                    self.update_threats(current_loc, direction)
+                    break # we break when we hit an enemy or blank block 
             else:
-                # we went out of bounds of the board
                 break
+                # we are at an enemy square, break
+            current_loc = path.next()
+
     # HELPER FUNCTIONS FOR BOARD INTERACTION
     def number_to_board_value(self, n): # given a number (0-41) returns the value of that board location
         return self.board[n / 7][n % 7]
