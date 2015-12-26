@@ -49,7 +49,7 @@ class Root_Node:
                     self.runs[current_loc][self.opposite(direction)] += self.runs[(current_loc[0] + self.dmap[self.opposite(direction)][0], current_loc[1] + self.dmap[self.opposite(direction)][1])][self.opposite(direction)]
                     self.update_threats(current_loc, direction)
                     break # we break when we hit an enemy or blank block 
-                if self.board[current_loc] != self.board[square]:
+                if self.board[current_loc[0]][current_loc[1]] != self.board[square[0]][square[1]]:
                     break
                 else:
                     pass
