@@ -11,67 +11,45 @@ def chunks(l, n):
 # runs can be updated whenever a peg is placed
 # threats need to be updated in a 6 by 6 box around every placed peg, this is slow as dirt
 
+
+# self.board[row][column]
+
 class Root_Node:
     def __init__(self):
-        self.board = [0 for x in range(0, 42)]
+        self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
         self.runs = {}
         # how many squares to add to a location to move a certain direction on the grid
-        self.dmap = {0:6, 1:-1, 2:-8, 3:-7, 4:-6, 5:1, 6:8, 7:7}
-        for i in range(0, 42):
+        self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
             #       2 3 4
             #       1 A 5
             #       0 7 6
+        for row in range(0, 6):
+            for column in range(0, 7):
+                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
         
-            self.runs[i] = [0, 0, 0, 0, 0, 0, 0]
-
-        # since im about to go to bed and dont have time to implement it,
-        # give every square 5 values, since it can be the end point in 5 ways
-        # scoring with total number of ally and enemy runs that end at that place might be cool
-        
-        self.threats = []
+        self.threats = set() # set of int threats, sign determines side
 
         self.side_to_move = 1
-        # runs and threes are a list of integers, positive for allies,
-        # negitive for enemies
+
     def update(self, position): # takes a positon from the engine and updates our internal position
-        for i in range(0, len(self.board)):
-            if self.board[i] == 0 and position[i] == 1:
-                self.board[i] = -1
-    def columns(self):
-        return [self.board[x:][::7] for x in range(0, 7)]
-    def rows(self):
-        return [self.board[i:i + 7] for i in range(0, len(self.board), 7)]
+        for i in range(0, len(self.board[0]) * len(self.board)):
+            if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
+                self.board[i / 7][i % 7] = -1
     def opposite(self, direction):
         mapper = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
         return mapper[direction]
-    def update_direction(self, square, direction):
-        current_loc = square
+    def update_direction(self, square, direction): # todo dont go down
+        path = self.traverse(square, direction) 
         while True:
-            current_loc += self.dmap[direction]
-            if square in range(0, 42):
-                if self.board[current_loc] == 0:
-                    self.runs[current_loc][self.opposite(direction)] += 1 * math.copysign(1, self.board[current_loc]) + self.runs[current_loc + self.dmap[self.opposite(direction)]][self.opposite(direction)] 
-                    
-                    if direction == 3:
-                        if self.runs[current_loc][3] == -3:
-                            pass
-                        elif self.runs[current_loc][3] == 3:
-                            pass
-                    else:
-                        if self.runs[current_loc][direction] == -3:
-                            self.threats.append(current_loc * -1)
-                        elif self.runs[current_loc][direction] == 3:
-                            self.threats.append(current_loc * 1)
-                        if self.runs[current_loc][self.opposite(direction)] == 3:
-                            self.threats.append(current_loc * 1)
-                        elif self.runs[current_loc][self.opposite(direction)] == -3:
-                            self.threats.append(current_loc * -1)
-                        if self.runs[current_loc][direction] + self.runs[current_loc][self.opposite(direction)] <= -3 and current_loc * -1 not in self.threats:
-                            self.threats.append(current_loc * -1)
-                        elif self.runs[current_loc][direction] + self.runs[current_loc][self.opposite(direction)] >= 3 and current_loc not in self.threats:
-                            self.threats.append(current_loc * 1)
+            current_loc = path.next()
+            if self.is_valid(current_loc):
+                if self.tuple_to_board_value(current_loc) == 0:
+                    # the following line might need to be just =
+                    self.runs[current_loc][self.opposite(direction)] += self.tuple_to_board_value(square)
+                    self.runs[current_loc][self.opposite(direction)] += self.runs[(current_loc[0] + self.dmap[self.opposite(direction)][0], current_loc[1] + self.dmap[self.opposite(direction)][1])][self.opposite(direction)]
+                    self.update_threats(current_loc, direction)
                     break # we break when we hit an enemy or blank block 
-                if self.board[current_loc] != self.board[square]:
+                if self.board[current_loc[0]][current_loc[1]] != self.board[square[0]][square[1]]:
                     break
                 else:
                     pass
@@ -79,27 +57,51 @@ class Root_Node:
             else:
                 # we went out of bounds of the board
                 break
-    def directions(self, square):
-        for i in range(0, 7):
-            
-        
+    # HELPER FUNCTIONS FOR BOARD INTERACTION
+    def tuple_to_board_value(self, t):
+        return self.board[t[0]][t[1]]
+    def number_to_board_value(self, n): # given a number (0-41) returns the value of that board location
+        return self.board[n / 7][n % 7]
+    def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
+        return t[0] * 7 + t[1]
+    def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
+        current_loc = location
+        while True:
+            current_loc = self.traverse_step(current_loc, direction)
+            yield current_loc
+    def traverse_step(self, location, direction):
+        return (location[0] + self.dmap[direction][0], location[1] + self.dmap[direction][1])
+    def is_valid(self, location):
+        return location[0] in range(0, 6) and location[1] in range(0, 7) # this can be made dramatically more efficent
+    def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
+        if abs(self.runs[location][direction]) == 3:
+            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
+        elif abs(self.runs[location][self.opposite(direction)]) == 3:
+            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite(direction)])]))
+        elif abs(self.runs[location][direction] + self.runs[location][self.opposite(direction)]) >= 3:
+            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
+    def valid_directions(self, a):
+        return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
+    
     def remove_old_threats(self):
         for threat in self.threats:
-            if self.board[abs(threat)] != 0:
+            if number_to_board_value(abs(threat)) != 0:
                 self.threats.remove(threat)
-    def display_board(self):
-        rows = self.rows()
-        for row in rows:
-            print row
-    def make_move(self, column):
-        rows = self.rows()
-        for row in range(0, len(rows)):
-            if rows[(len(rows) - 1) - row][column] == 0:
                 
-                self.board[(7 * ((len(rows) - 1) - row))+ column] = self.side_to_move
+    def display_board(self):
+        for row in self.board:
+            print row
+            
+    def make_move(self, column):
+        for row in range(0, len(self.board)):
+            if self.board[(len(self.board) - 1) - row][column] == 0:
+                self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+                for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
+                    self.update_direction(( (len(self.board) - 1) - row, column), direction)
+                self.side_to_move *= -1
                 break
     def legal_moves(self):
-        return [x for x in range(0, 7) if self.board[x] == 0]
+        return [x for x in range(0, 7) if self.board[0][x] == 0]
 
 
 class Game:
@@ -107,11 +109,13 @@ class Game:
         self.settings = []
     def set_setting(self, setting, value):
         self.settings[setting] = value
+
 foo = Root_Node()
 while True:
-    var = raw_input()
-    foo.make_move(var)
-
+	var = int(raw_input())
+	foo.make_move(var)
+	foo.display_board()
+	print foo.threats
 
 while True:
     break
