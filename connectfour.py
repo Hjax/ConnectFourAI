@@ -30,6 +30,11 @@ class Root_Node:
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
                 self.board[i / 7][i % 7] = -1
+                if self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
+                    self.threats.remove(self.board_tuple_to_number((i / 7, i % 7)))
+                if -1 * self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
+                    self.threats.remove(-1 * self.board_tuple_to_number((i / 7, i % 7)))
+                    
     
     def update_direction(self, square, direction): # todo dont go down
         path = self.traverse(square, direction)
@@ -51,7 +56,7 @@ class Root_Node:
 
     # HELPER FUNCTIONS FOR BOARD INTERACTION
     def number_to_board_value(self, n): # given a number (0-41) returns the value of that board location
-        return self.board[n / 7][n % 7]
+        return self.board[int(n / 7)][int(n % 7)]
     def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
         return t[0] * 7 + t[1]
     def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
@@ -75,12 +80,7 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     def valid_directions(self, a):
         return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
-    
-    def remove_old_threats(self):
-        for threat in self.threats:
-            if number_to_board_value(abs(threat)) != 0:
-                self.threats.remove(threat)
-                
+               
     def display_board(self):
         for row in self.board:
             print row
@@ -88,7 +88,13 @@ class Root_Node:
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
                 self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+                # remove the threat if its in our threat list
+                if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
+                    self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+                if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
+                    self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
                 for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
+                    
                     self.update_direction(( (len(self.board) - 1) - row, column), direction)
                 self.side_to_move *= -1
                 break
@@ -115,7 +121,7 @@ def test_speed():
                 foo.make_move(random.choice(foo.legal_moves()))
         print counter
         assert counter > 10000
-def test_threats():
+def test_threats_simple():
     foo = Root_Node()
     foo.make_move(0)
     foo.make_move(6)
@@ -126,6 +132,14 @@ def test_threats():
     foo.make_move(4)
     assert -38 in foo.threats
     assert 38 in foo.threats
+    foo.make_move(3)
+    assert -38 not in foo.threats
+    assert 38 not in foo.threats
+def test_traverse():
+    foo = Root_Node()
+    bar = foo.traverse((1, 2), 6)
+    assert bar.next() == (2, 3)
+    assert bar.next() == (3, 4)
 
 """
 
