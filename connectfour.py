@@ -1,12 +1,6 @@
 import math, random, time
 from profilehooks import profile
 
-foo = [0 for x in range(0, 42)]
-foo[5] = 1
-def chunks(l, n):
-    n = max(1, n)
-    return [l[i:i + n] for i in range(0, len(l), n)]
-
 # so notes on keeping track of important things
 
 # runs can be updated whenever a peg is placed
@@ -21,6 +15,7 @@ class Root_Node:
         self.runs = {}
         # how many squares to add to a location to move a certain direction on the grid
         self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
+        self.opposite = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
             #       2 3 4
             #       1 A 5
             #       0 7 6
@@ -36,9 +31,6 @@ class Root_Node:
         for i in range(0, len(self.board[0]) * len(self.board)):
             if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
                 self.board[i / 7][i % 7] = -1
-    def opposite(self, direction):
-        mapper = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
-        return mapper[direction]
     def update_direction(self, square, direction): # todo dont go down
         path = self.traverse(square, direction) 
         while True:
@@ -46,11 +38,12 @@ class Root_Node:
             if self.is_valid(current_loc):
                 if self.tuple_to_board_value(current_loc) == 0 or self.tuple_to_board_value(current_loc) == self.board[square[0]][square[1]]:
                     # the following line might need to be just =
-                    self.runs[current_loc][self.opposite(direction)] += self.tuple_to_board_value(square)
-                    self.runs[current_loc][self.opposite(direction)] += self.runs[(current_loc[0] + self.dmap[self.opposite(direction)][0], current_loc[1] + self.dmap[self.opposite(direction)][1])][self.opposite(direction)]
+                    self.runs[current_loc][self.opposite[direction]] += self.tuple_to_board_value(square)
+                    self.runs[current_loc][self.opposite[direction]] += self.runs[(current_loc[0] + self.dmap[self.opposite[direction]][0], current_loc[1] + self.dmap[self.opposite[direction]][1])][self.opposite[direction]]
                     # need to grab from both directions
-                    self.update_threats(current_loc, direction)
+                    
                     if self.tuple_to_board_value(current_loc) == 0 :
+                        self.update_threats(current_loc, direction)
                         break # we break when we hit an enemy or blank block 
                 else:
                     break
@@ -77,9 +70,9 @@ class Root_Node:
     def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
         if abs(self.runs[location][direction]) == 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-        elif abs(self.runs[location][self.opposite(direction)]) == 3:
-            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite(direction)])]))
-        elif abs(self.runs[location][direction] + self.runs[location][self.opposite(direction)]) >= 3:
+        elif abs(self.runs[location][self.opposite[direction]]) == 3:
+            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite[direction]])]))
+        elif abs(self.runs[location][direction] + self.runs[location][self.opposite[direction]]) >= 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     def valid_directions(self, a):
         return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
@@ -92,7 +85,6 @@ class Root_Node:
     def display_board(self):
         for row in self.board:
             print row
-            
     def make_move(self, column):
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
@@ -110,18 +102,18 @@ class Game:
         self.settings = []
     def set_setting(self, setting, value):
         self.settings[setting] = value
-
-foo = Root_Node()
-start = time.time()
-counter = 0
-while time.time() - start < 5:
-    counter += 1
-    if len(foo.legal_moves()) == 0:
-        foo = Root_Node()
-    else:
-        foo.make_move(random.choice(foo.legal_moves()))
-print counter
-
+for x in range(0, 3):
+    foo = Root_Node()
+    start = time.time()
+    counter = 0
+    while time.time() - start < 5:
+        counter += 1
+        if len(foo.legal_moves()) == 0:
+            foo = Root_Node()
+        else:
+            foo.make_move(random.choice(foo.legal_moves()))
+    print counter
+"""
 while True:
     break
     connectfour = Game()
@@ -133,3 +125,4 @@ while True:
     if processed[0] == "update":
         if processed[1] == "field":
             root.update(processed[2].replace(";", ",").split[","])
+"""
