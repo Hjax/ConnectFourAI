@@ -10,37 +10,30 @@ def chunks(l, n):
 
 # runs can be updated whenever a peg is placed
 # threats need to be updated in a 6 by 6 box around every placed peg, this is slow as dirt
-
-class Root_Node:
-    def __init__(self):
-        self.board = [0 for x in range(0, 42)]
-        self.runs = {}
-        # how many squares to add to a location to move a certain direction on the grid
-        self.dmap = {0:6, 1:-1, 2:-8, 3:-7, 4:-6, 5:1, 6:8, 7:7}
-        for i in range(0, 42):
             #       2 3 4
             #       1 A 5
             #       0 7 6
-        
-            self.runs[i] = [0, 0, 0, 0, 0, 0, 0]
 
-        # since im about to go to bed and dont have time to implement it,
-        # give every square 5 values, since it can be the end point in 5 ways
-        # scoring with total number of ally and enemy runs that end at that place might be cool
+# self.board[row][column]
+
+class Root_Node:
+    def __init__(self):
+        self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
+        self.runs = {}
+        # how many squares to add to a location to move a certain direction on the grid
+        self.dmap = {0:6, 1:-1, 2:-8, 3:-7, 4:-6, 5:1, 6:8, 7:7}
+        for row in range(0, 6):
+            for column in range(0, 7):
+                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0]
         
-        self.threats = []
+        self.threats = [] # list of int threats, sign determines side
 
         self.side_to_move = 1
-        # runs and threes are a list of integers, positive for allies,
-        # negitive for enemies
+
     def update(self, position): # takes a positon from the engine and updates our internal position
-        for i in range(0, len(self.board)):
-            if self.board[i] == 0 and position[i] == 1:
-                self.board[i] = -1
-    def columns(self):
-        return [self.board[x:][::7] for x in range(0, 7)]
-    def rows(self):
-        return [self.board[i:i + 7] for i in range(0, len(self.board), 7)]
+        for i in range(0, len(self.board[0]) * len(self.board)):
+            if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
+                self.board[i / 7][i % 7] = -1
     def opposite(self, direction):
         mapper = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
         return mapper[direction]
@@ -79,27 +72,28 @@ class Root_Node:
             else:
                 # we went out of bounds of the board
                 break
-    def directions(self, square):
-        for i in range(0, 7):
-            
-        
+    # HELPER FUNCTIONS FOR BOARD INTERACTION
+    def number_to_board_value(self, n): # given a number (0-41) returns the value of that board location
+        return self.board[n / 7][n % 7]
+    def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
+        return t[0] * 7 + t[1]
+    
     def remove_old_threats(self):
         for threat in self.threats:
-            if self.board[abs(threat)] != 0:
+            if number_to_board_value(abs(threat)) != 0:
                 self.threats.remove(threat)
-    def display_board(self):
-        rows = self.rows()
-        for row in rows:
-            print row
-    def make_move(self, column):
-        rows = self.rows()
-        for row in range(0, len(rows)):
-            if rows[(len(rows) - 1) - row][column] == 0:
                 
-                self.board[(7 * ((len(rows) - 1) - row))+ column] = self.side_to_move
+    def display_board(self):
+        for row in self.board:
+            print row
+            
+    def make_move(self, column):
+        for row in range(0, len(self.board)):
+            if self.board[(len(self.board) - 1) - row][column] == 0:
+                self.board[(len(self.board) - 1) - row][column] = self.side_to_move
                 break
     def legal_moves(self):
-        return [x for x in range(0, 7) if self.board[x] == 0]
+        return [x for x in range(0, 7) if self.board[0][x] == 0]
 
 
 class Game:
@@ -107,10 +101,6 @@ class Game:
         self.settings = []
     def set_setting(self, setting, value):
         self.settings[setting] = value
-foo = Root_Node()
-while True:
-    var = raw_input()
-    foo.make_move(var)
 
 
 while True:
