@@ -1,5 +1,4 @@
 import math, random, time
-from profilehooks import profile
 
 # so notes on keeping track of important things
 
