@@ -102,26 +102,41 @@ class Game:
         self.settings = []
     def set_setting(self, setting, value):
         self.settings[setting] = value
-"""
-for x in range(0, 3):
+def test_speed():
+    print ""
+    for x in range(0, 3):
+        foo = Root_Node()
+        start = time.time()
+        counter = 0
+        while time.time() - start < 1:
+            counter += 1
+            if len(foo.legal_moves()) == 0:
+                foo = Root_Node()
+            else:
+                foo.make_move(random.choice(foo.legal_moves()))
+        print counter
+        assert counter > 10000
+def test_threats():
     foo = Root_Node()
-    start = time.time()
-    counter = 0
-    while time.time() - start < 5:
-        counter += 1
-        if len(foo.legal_moves()) == 0:
-            foo = Root_Node()
-        else:
-            foo.make_move(random.choice(foo.legal_moves()))
-    print counter
+    foo.make_move(0)
+    foo.make_move(6)
+    foo.make_move(1)
+    foo.make_move(5)
+    foo.make_move(2)
+    assert 38 in foo.threats
+    foo.make_move(4)
+    assert -38 in foo.threats
+    assert 38 in foo.threats
+
 """
+
 foo = Root_Node()
 while True:
     move = int(raw_input())
     foo.make_move(move)
     foo.display_board()
     print foo.threats
-
+"""
 """
 while True:
     break
