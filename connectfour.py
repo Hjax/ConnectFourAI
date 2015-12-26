@@ -129,6 +129,7 @@ def test_threats_simple():
     foo.make_move(5)
     foo.make_move(2)
     assert 38 in foo.threats
+    assert -38 not in foo.threats
     foo.make_move(4)
     assert -38 in foo.threats
     assert 38 in foo.threats
@@ -140,26 +141,28 @@ def test_traverse():
     bar = foo.traverse((1, 2), 6)
     assert bar.next() == (2, 3)
     assert bar.next() == (3, 4)
+def test_square_validity():
+    foo = Root_Node()
+    assert not foo.is_valid((-1, 5))
+    for i in range(0, 7):
+        for x in range(0, 6):
+            assert foo.is_valid((x, i))
+def test_full_game():
+    foo = Root_Node()
+    for i in "4444452322223353347777362177555511111":
+	foo.make_move(int(i) - 1)
+    assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
+    assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
 
-"""
+if __name__ == "main":
+    while True:
+        connectfour = Game()
+        root = Root_Node()
+        read_line = raw_input()
+        processed = read_line.split(" ")
+        if processed[0] == "settings":
+            connectfour.set_setting(processed[1], processed[2])
+        if processed[0] == "update":
+            if processed[1] == "field":
+                root.update(processed[2].replace(";", ",").split[","])
 
-foo = Root_Node()
-while True:
-    move = int(raw_input())
-    foo.make_move(move)
-    foo.display_board()
-    print foo.threats
-"""
-"""
-while True:
-    break
-    connectfour = Game()
-    root = Node()
-    read_line = raw_input()
-    processed = read_line.split(" ")
-    if processed[0] == "settings":
-        connectfour.set_setting(processed[1], processed[2])
-    if processed[0] == "update":
-        if processed[1] == "field":
-            root.update(processed[2].replace(";", ",").split[","])
-"""
