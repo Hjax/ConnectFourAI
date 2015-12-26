@@ -25,7 +25,7 @@ class Root_Node:
             #       0 7 6
         for row in range(0, 6):
             for column in range(0, 7):
-                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0]
+                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
         
         self.threats = set() # set of int threats, sign determines side
 
@@ -38,8 +38,8 @@ class Root_Node:
     def opposite(self, direction):
         mapper = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
         return mapper[direction]
-    def update_direction(self, square, direction):
-        path = self.traverse(square, direction)
+    def update_direction(self, square, direction): # todo dont go down
+        path = self.traverse(square, direction) 
         while True:
             current_loc = path.next()
             if self.is_valid(current_loc):
@@ -67,18 +67,21 @@ class Root_Node:
     def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
         current_loc = location
         while True:
-            current_loc = (current_loc[0] + self.dmap[direction][0], current_loc[1] + self.dmap[direction][1])
+            current_loc = self.traverse_step(current_loc, direction)
             yield current_loc
+    def traverse_step(self, location, direction):
+        return (location[0] + self.dmap[direction][0], location[1] + self.dmap[direction][1])
     def is_valid(self, location):
-        return location[0] * 7 + location[1] < 42 and  location[0] * 7 + location[1] >= 0
+        return location[0] in range(0, 6) and location[1] in range(0, 7) # this can be made dramatically more efficent
     def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
         if abs(self.runs[location][direction]) == 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
         elif abs(self.runs[location][self.opposite(direction)]) == 3:
-            self.threats = self.threats.union(set([self.tuple_to_board_value(location) * math.copysign(1, self.runs[location][self.opposite(direction)])]))
+            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite(direction)])]))
         elif abs(self.runs[location][direction] + self.runs[location][self.opposite(direction)]) >= 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-        
+    def valid_directions(self, a):
+        return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
     
     def remove_old_threats(self):
         for threat in self.threats:
@@ -93,6 +96,9 @@ class Root_Node:
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
                 self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+                for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
+                    self.update_direction(( (len(self.board) - 1) - row, column), direction)
+                self.side_to_move *= -1
                 break
     def legal_moves(self):
         return [x for x in range(0, 7) if self.board[0][x] == 0]
@@ -104,6 +110,12 @@ class Game:
     def set_setting(self, setting, value):
         self.settings[setting] = value
 
+foo = Root_Node()
+while True:
+	var = int(raw_input())
+	foo.make_move(var)
+	foo.display_board()
+	print foo.threats
 
 while True:
     break
