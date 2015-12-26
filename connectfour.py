@@ -66,7 +66,7 @@ class Root_Node:
     def traverse_step(self, location, direction):
         return (location[0] + self.dmap[direction][0], location[1] + self.dmap[direction][1])
     def is_valid(self, location):
-        return location[0] in range(0, 6) and location[1] in range(0, 7) # this can be made dramatically more efficent
+        return location[0] >= 0 and location[0] < 6 and location[1] >= 0 and location[1] < 7 # this can be made dramatically more efficent
     def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
         if abs(self.runs[location][direction]) == 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
@@ -85,7 +85,6 @@ class Root_Node:
     def display_board(self):
         for row in self.board:
             print row
-    @profile
     def make_move(self, column):
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
