@@ -28,7 +28,7 @@ class Root_Node:
         self.side_to_move = 1
 
     def update(self, position): # takes a positon from the engine and updates our internal position
-        for i in range(0, len(self.board[0]) * len(self.board)):
+        for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
                 self.board[i / 7][i % 7] = -1
     
