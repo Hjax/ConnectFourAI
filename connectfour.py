@@ -28,8 +28,7 @@ class Root_Node:
         # give every square 5 values, since it can be the end point in 5 ways
         # scoring with total number of ally and enemy runs that end at that place might be cool
         
-        self.threats_allied = []
-        self.threats_enemy = []
+        self.threats = []
 
         self.side_to_move = 1
         # runs and threes are a list of integers, positive for allies,
@@ -43,37 +42,36 @@ class Root_Node:
     def rows(self):
         return [self.board[i:i + 7] for i in range(0, len(self.board), 7)]
     def opposite(self, direction):
-        mapper = [0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3]
+        mapper = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
         return mapper[direction]
     def update_direction(self, square, direction):
         current_loc = square
         while True:
-            current_loc += dmap[direction]
+            current_loc += self.dmap[direction]
             if square in range(0, 42):
-                if self.board[i] == 0:
-                    self.runs[current][self.opposite(direction)] += 1 * math.copysign(1, self.board[current_loc])
+                if self.board[current_loc] == 0:
+                    self.runs[current_loc][self.opposite(direction)] += 1 * math.copysign(1, self.board[current_loc]) + self.runs[current_loc + self.dmap[self.opposite(direction)]][self.opposite(direction)] 
                     
                     if direction == 3:
-                        if self.runs[current][3] == -3:
+                        if self.runs[current_loc][3] == -3:
                             pass
-                        elif self.runs[current][3] == 3:
+                        elif self.runs[current_loc][3] == 3:
                             pass
                     else:
-                        
-                        if self.runs[current][direction] == -3:
-
-                        elif self.runs[current][direction] == 3:
-
-                        if self.runs[current][self.opposite(direction)] == 3:
-
-                        elif self.runs[current][self.opposite(direction)] == -3:
-
-                        if self.runs[current][direction] + self.runs[current][self.opposite(direction)] == -3:
-                        
-                        elif self.runs[current][direction] + self.runs[current][self.opposite(direction)] == 3:
-
+                        if self.runs[current_loc][direction] == -3:
+                            self.threats.append(current_loc * -1)
+                        elif self.runs[current_loc][direction] == 3:
+                            self.threats.append(current_loc * 1)
+                        if self.runs[current_loc][self.opposite(direction)] == 3:
+                            self.threats.append(current_loc * 1)
+                        elif self.runs[current_loc][self.opposite(direction)] == -3:
+                            self.threats.append(current_loc * -1)
+                        if self.runs[current_loc][direction] + self.runs[current_loc][self.opposite(direction)] <= -3 and current_loc * -1 not in self.threats:
+                            self.threats.append(current_loc * -1)
+                        elif self.runs[current_loc][direction] + self.runs[current_loc][self.opposite(direction)] >= 3 and current_loc not in self.threats:
+                            self.threats.append(current_loc * 1)
                     break # we break when we hit an enemy or blank block 
-                if self.board[i] != self.board[square]:
+                if self.board[current_loc] != self.board[square]:
                     break
                 else:
                     pass
@@ -81,8 +79,14 @@ class Root_Node:
             else:
                 # we went out of bounds of the board
                 break
+    def directions(self, square):
+        for i in range(0, 7):
             
         
+    def remove_old_threats(self):
+        for threat in self.threats:
+            if self.board[abs(threat)] != 0:
+                self.threats.remove(threat)
     def display_board(self):
         rows = self.rows()
         for row in rows:
@@ -91,6 +95,7 @@ class Root_Node:
         rows = self.rows()
         for row in range(0, len(rows)):
             if rows[(len(rows) - 1) - row][column] == 0:
+                
                 self.board[(7 * ((len(rows) - 1) - row))+ column] = self.side_to_move
                 break
     def legal_moves(self):
@@ -102,7 +107,11 @@ class Game:
         self.settings = []
     def set_setting(self, setting, value):
         self.settings[setting] = value
-    
+foo = Root_Node()
+while True:
+    var = raw_input()
+    foo.make_move(var)
+
 
 while True:
     break
