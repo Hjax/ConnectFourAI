@@ -45,6 +45,8 @@ class Root_Node:
         base_board_value = self.board[square[0]][square[1]]
         if self.is_valid(current_loc):
             starting_value = abs(self.runs[square][self.opposite[direction]])
+        if math.copysign(1, self.runs[square][self.opposite[direction]]) != base_board_value:
+            starting_value = 0
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
             starting_value += 1
@@ -278,6 +280,8 @@ def test_full_game():
     for i in "4444452322223353347777362177555511111":
         foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
+    foo.display_board()
+    print foo.threats
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
 def test_node_export():
     foo = Root_Node()
