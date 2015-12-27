@@ -38,13 +38,13 @@ class Root_Node:
                 if -1 * self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
                     self.threats.remove(-1 * self.board_tuple_to_number((i / 7, i % 7)))
                     
-    
+    # note it isnt detecting enemy runs correctly
     def update_direction(self, square, direction): # todo dont go down
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
         if self.is_valid(current_loc):
-            starting_value = self.runs[square][self.opposite[direction]]
+            starting_value = abs(self.runs[square][self.opposite[direction]])
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
             starting_value += 1
@@ -184,9 +184,6 @@ class Game:
         return min(max(thinking_time, increment), current_time)
     def negamax(self, node, depth, color): # color might be taken care of by 
         if depth == 0 or abs(node.score()) > 99999:
-            if abs(node.score()) > 99999:
-                node.display_board()
-                print ""
             return color * node.score()
         bestValue = -999999
         for child in node.legal_moves():
