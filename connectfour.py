@@ -184,15 +184,21 @@ class Game:
         current_round = int(self.settings["round"])
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
-    def negamax(self, node, depth, color): # color might be taken care of by 
+    def negamax(self, node, depth):
         if depth == 0 or abs(node.score()) > 99999:
-            return color * node.score()
-        bestValue = -999999
+            return node.score()
+        if node.side_to_move == 1:
+            bestValue = -99999999
+        else:
+            bestValue = 99999999
         for child in node.legal_moves():
             self.nodes += 1
             current_child = node.export()
             current_child.make_move(child)
-            bestValue = max(bestValue, -1 * self.negamax(current_child, depth -1, -1 * color))
+            if node.side_to_move == 1:
+                bestValue = max(bestValue, self.negamax(current_child, depth -1))
+            else:
+                bestValue = min(bestValue, self.negamax(current_child, depth -1))
         
         return bestValue
         
@@ -204,12 +210,12 @@ class Game:
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            scores[child] = self.negamax(current_child, 3, current_child.side_to_move)
+            scores[child] = self.negamax(current_child, 5)
         #print self.nodes
-        self.root.make_move((max(scores, key=lambda k: scores[k])))
+        self.root.make_move((min(scores, key=lambda k: scores[k])))
         #print max(scores.values())
         print scores
-        print("place disc %s" % (max(scores, key=lambda k: scores[k])))
+        print("place disc %s" % (min(scores, key=lambda k: scores[k])))
 
 if __name__ == "__main1__" :
     connectfour = Game()
