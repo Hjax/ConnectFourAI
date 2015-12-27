@@ -43,15 +43,18 @@ class Root_Node:
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
+        if self.is_valid(current_loc):
+            starting_value = self.runs[square][self.opposite[direction]]
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
-            if current_board_value == 0 or current_board_value == base_board_value:
+            starting_value += 1
+            if current_board_value == 0:
                 # the following line might need to be just =
-                self.runs[current_loc][self.opposite[direction]] += base_board_value
-                self.runs[current_loc][self.opposite[direction]] += self.runs[(current_loc[0] + self.dmap[self.opposite[direction]][0], current_loc[1] + self.dmap[self.opposite[direction]][1])][self.opposite[direction]]
-                if current_board_value == 0 :
-                    self.update_threats(current_loc, direction)
-                    break # we break when we hit an enemy or blank block 
+                self.runs[current_loc][self.opposite[direction]] = starting_value * base_board_value
+                self.update_threats(current_loc, direction)
+                break # we break when we hit an enemy or blank block
+            elif current_board_value == base_board_value:
+                pass
             else:
                 break
                 # we are at an enemy square, break
