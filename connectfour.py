@@ -31,13 +31,8 @@ class Root_Node:
 
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
-            if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
-                self.board[i / 7][i % 7] = -1
-                self.pieces_played += 1
-                if self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
-                    self.threats.remove(self.board_tuple_to_number((i / 7, i % 7)))
-                if -1 * self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
-                    self.threats.remove(-1 * self.board_tuple_to_number((i / 7, i % 7)))
+            if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']: # TODO make sure this works
+                self.make_move(i % 7) # TODO theres a faster way to do this
                     
     # note it isnt detecting enemy runs correctly
     def update_direction(self, square, direction): # todo dont go down
@@ -224,6 +219,7 @@ class Game:
             self.root.make_move((max(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
         stdout.flush()
+        self.root.display_board()
 
 if __name__ == "__main__" :
     connectfour = Game()
@@ -247,9 +243,10 @@ if __name__ == "__main__" :
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main__1" :
+if __name__ == "__main1__" :
     connectfour = Game()
     while True:
+        connectfour.settings['current_time'] = 4000
         connectfour.root.make_move(int(raw_input()))
         connectfour.go()
         connectfour.root.display_board()
