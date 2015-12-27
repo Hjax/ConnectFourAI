@@ -1,5 +1,6 @@
 import math, random, time
 import copy
+from sys import stderr, stdin, stdout
 
 # so notes on keeping track of important things
 
@@ -204,37 +205,49 @@ class Game:
         
         
     def go(self):
-       # time = self.current_move_time()
-       # print time
+        #time = self.current_move_time()
+        if int(self.settings["current_time"]) < 1000:
+            depth = 2
+        elif int(self.settings["current_time"])< 5000:
+            depth = 3
+        else:
+            depth = 4
         scores = {}
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            scores[child] = self.negamax(current_child, 5)
-        #print self.nodes
-        self.root.make_move((min(scores, key=lambda k: scores[k])))
-        #print max(scores.values())
-        print scores
-        print("place disc %s" % (min(scores, key=lambda k: scores[k])))
+            scores[child] = self.negamax(current_child, depth)
+        if self.root.side_to_move == -1:
+            self.root.make_move((min(scores, key=lambda k: scores[k])))
+            stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
+        else:
+            self.root.make_move((max(scores, key=lambda k: scores[k])))
+            stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
+        stdout.flush()
 
-if __name__ == "__main1__" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
-        read_line = raw_input()
-        processed = read_line.split(" ")
+        read_line = stdin.readline()
+        if len(read_line) == 0:
+            break
+        line = read_line.strip()
+        if len(line) == 0:
+            continue
+        processed = line.split(" ")
         if processed[0] == "settings":
             connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "update":
             if processed[1] == "game":
                 if processed[2] == "field":
-                    root.update(processed[3].replace(";", ",").split(","))
+                    connectfour.root.update(processed[3].replace(";", ",").split(","))
                 if processed[2] == "round":
                     connectfour.set_setting(processed[2], processed[3])
                 connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         connectfour.root.make_move(int(raw_input()))
