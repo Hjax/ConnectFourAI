@@ -1,5 +1,6 @@
 import math, random, time
 import copy
+from sys import stderr, stdin, stdout
 
 # so notes on keeping track of important things
 
@@ -30,13 +31,8 @@ class Root_Node:
 
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
-            if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
-                self.board[i / 7][i % 7] = -1
-                self.pieces_played += 1
-                if self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
-                    self.threats.remove(self.board_tuple_to_number((i / 7, i % 7)))
-                if -1 * self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
-                    self.threats.remove(-1 * self.board_tuple_to_number((i / 7, i % 7)))
+            if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']: # TODO make sure this works
+                self.make_move(i % 7) # TODO theres a faster way to do this
                     
     # note it isnt detecting enemy runs correctly
     def update_direction(self, square, direction): # todo dont go down
@@ -115,7 +111,7 @@ class Root_Node:
             pass
         score = 0
         # we only return winning score for wins we can see, not forced wins though tempo, since we might lose a tempo
-        winning_score = 999999
+        winning_score = 9999999
 
         hanging_threats = []
         immeadiate_threats = []
@@ -124,10 +120,10 @@ class Root_Node:
                 hanging_threats.append(threat)
             else:
                 immeadiate_threats.append(threat)
-        
+        self.immeadiate_threats = immeadiate_threats
         for threat in immeadiate_threats:
             if math.copysign(1, threat) == self.side_to_move:
-                return winning_score
+                return winning_score * self.side_to_move
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
         score += len(filter(lambda x: x > 0, self.threats))
         score -= len(filter(lambda x: x < 0, self.threats))
@@ -204,41 +200,66 @@ class Game:
         
         
     def go(self):
-       # time = self.current_move_time()
-       # print time
+        #time = self.current_move_time()
+        # if we can win, we must win, this might also block enemy threats
+        if abs(self.root.score()) > 99999:
+            if self.root.side_to_move == -1:
+                self.root.immeadiate_threats.sort()
+            else:
+                self.root.immeadiate_threats.sort()
+                self.root.immeadiate_threats.reverse()
+            stdout.write("place_disc %s" % (int(self.root.immeadiate_threats[0] % 7)) + '\n')
+            stdout.flush()
+            return
+        if int(self.settings["current_time"]) < 1000:
+            depth = 2
+        elif int(self.settings["current_time"])< 5000:
+            depth = 3
+        else:
+            depth = 4
         scores = {}
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            scores[child] = self.negamax(current_child, 5)
-        #print self.nodes
-        self.root.make_move((min(scores, key=lambda k: scores[k])))
-        #print max(scores.values())
-        print scores
-        print("place disc %s" % (min(scores, key=lambda k: scores[k])))
+            scores[child] = self.negamax(current_child, depth)
+        #print scores
+        if self.root.side_to_move == -1:
+            self.root.make_move((min(scores, key=lambda k: scores[k])))
+            stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
+        else:
+            self.root.make_move((max(scores, key=lambda k: scores[k])))
+            stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
+        stdout.flush()
+        #self.root.display_board()
 
-if __name__ == "__main1__" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
-        read_line = raw_input()
-        processed = read_line.split(" ")
+        read_line = stdin.readline()
+        if len(read_line) == 0:
+            break
+        line = read_line.strip()
+        if len(line) == 0:
+            continue
+        processed = line.split(" ")
         if processed[0] == "settings":
             connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "update":
             if processed[1] == "game":
                 if processed[2] == "field":
-                    root.update(processed[3].replace(";", ",").split(","))
+                    connectfour.root.update(processed[3].replace(";", ",").split(","))
                 if processed[2] == "round":
                     connectfour.set_setting(processed[2], processed[3])
                 connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main__" :
+if __name__ == "__main1__" :
     connectfour = Game()
     while True:
-        connectfour.root.make_move(int(raw_input()))
+        connectfour.settings['current_time'] = 4000
         connectfour.go()
+        connectfour.root.make_move(int(raw_input()))
         connectfour.root.display_board()
 def test_speed():
     print ""
