@@ -104,9 +104,21 @@ class Root_Node:
 
 class Game:
     def __init__(self):
-        self.settings = []
+        self.settings = {}
     def set_setting(self, setting, value):
         self.settings[setting] = value
+    def current_move_time(self): # returns the amount of time we are going to think for this move
+        max_time = int(self.settings["timebank"])
+        current_time = int(self.settings["current_time"])
+        increment = int(self.settings["time_per_move"])
+        current_round = int(self.settings["round"])
+        thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
+        return min(max(thinking_time, increment), current_time)
+    def minimax(self):
+        pass
+    def go(self):
+        time = self.current_move_time()
+        print time
 def test_speed():
     print ""
     for x in range(0, 3):
@@ -150,19 +162,26 @@ def test_square_validity():
 def test_full_game():
     foo = Root_Node()
     for i in "4444452322223353347777362177555511111":
-	foo.make_move(int(i) - 1)
+        foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
 
-if __name__ == "main":
+if __name__ == "__main__":
+    connectfour = Game()
     while True:
-        connectfour = Game()
+
         root = Root_Node()
         read_line = raw_input()
         processed = read_line.split(" ")
         if processed[0] == "settings":
             connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "update":
-            if processed[1] == "field":
-                root.update(processed[2].replace(";", ",").split[","])
-
+            if processed[1] == "game":
+                if processed[2] == "field":
+                    root.update(processed[3].replace(";", ",").split[","])
+                if processed[2] == "round":
+                    connectfour.set_setting(processed[2], processed[3])
+                connectfour.set_setting(processed[1], processed[2])
+        if processed[0] == "action":
+            connectfour.set_setting("current_time", processed[2])
+            connectfour.go()
