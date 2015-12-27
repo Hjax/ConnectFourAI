@@ -23,13 +23,14 @@ class Root_Node:
                 self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
         
         self.threats = set() # set of int threats, sign determines side
-
+        self.pieces_played = 0
         self.side_to_move = 1
 
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] == 1: # TODO make sure this works
                 self.board[i / 7][i % 7] = -1
+                self.pieces_played += 1
                 if self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
                     self.threats.remove(self.board_tuple_to_number((i / 7, i % 7)))
                 if -1 * self.board_tuple_to_number((i / 7, i % 7)) in self.threats:
@@ -89,6 +90,7 @@ class Root_Node:
             if self.board[(len(self.board) - 1) - row][column] == 0:
                 self.board[(len(self.board) - 1) - row][column] = self.side_to_move
                 # remove the threat if its in our threat list
+                self.pieces_played += 1
                 if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
                     self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
                 if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
@@ -100,7 +102,52 @@ class Root_Node:
                 break
     def legal_moves(self):
         return [x for x in range(0, 7) if self.board[0][x] == 0]
+    def score(self): # todo detect hanging threats sooner, its faster
+        score = 0
+        # we only return winning score for wins we can see, not forced wins though tempo, since we might lose a tempo
+        winning_score = 999999
 
+        def same_sign(x, y):
+            return math.copysign(1, x) == math.copysign(1, y)
+        
+        hanging_threats = []
+        immeadiate_threats = []
+        for threat in self.threats:
+            if abs(threat) + 7 in range(0, 42) and self.number_to_board_value(abs(threat) + 7) == 0:
+                hanging_threats.append(threat)
+            else:
+                immeadiate_threats.append(threat)
+        if len(filter(lambda x: same_sign(x, self.side_to_move), immeadiate_threats)) >= 1:
+            return winning_score
+        # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
+        score += len(filter(lambda x: x > 0, self.threats))
+        score -= len(filter(lambda x: x < 0, self.threats))
+
+        taken = []
+        for threat in hanging_threats:
+            taken.append(abs(threat))
+            taken.append(abs(threat) + 7)
+            clearer = self.traverse((int(threat / 7), int(threat % 7)), 3)
+            next_step = clearer.next()
+            while self.is_valid(next_step):
+                if self.board_tuple_to_number(next_step) not in taken:
+                    taken.append(self.board_tuple_to_number(next_step))
+                    next_step = clearer.next()
+                else:
+                    break
+        # you want it to be odd when its your turn to move, even otherwise
+        if self.side_to_move == 1:
+            if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
+                score += 500
+            elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
+                score -= 500
+        else:
+            if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
+                score += 500
+            elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
+                score -= 500            
+        return score
+        
 
 class Game:
     def __init__(self):
@@ -119,6 +166,27 @@ class Game:
     def go(self):
         time = self.current_move_time()
         print time
+
+if __name__ == "__main__":
+    connectfour = Game()
+    while True:
+
+        root = Root_Node()
+        read_line = raw_input()
+        processed = read_line.split(" ")
+        if processed[0] == "settings":
+            connectfour.set_setting(processed[1], processed[2])
+        if processed[0] == "update":
+            if processed[1] == "game":
+                if processed[2] == "field":
+                    root.update(processed[3].replace(";", ",").split[","])
+                if processed[2] == "round":
+                    connectfour.set_setting(processed[2], processed[3])
+                connectfour.set_setting(processed[1], processed[2])
+        if processed[0] == "action":
+            connectfour.set_setting("current_time", processed[2])
+            connectfour.go()
+
 def test_speed():
     print ""
     for x in range(0, 3):
@@ -131,6 +199,7 @@ def test_speed():
                 foo = Root_Node()
             else:
                 foo.make_move(random.choice(foo.legal_moves()))
+                foo.score()
         print counter
         assert counter > 10000
 def test_threats_simple():
@@ -165,23 +234,3 @@ def test_full_game():
         foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
-
-if __name__ == "__main__":
-    connectfour = Game()
-    while True:
-
-        root = Root_Node()
-        read_line = raw_input()
-        processed = read_line.split(" ")
-        if processed[0] == "settings":
-            connectfour.set_setting(processed[1], processed[2])
-        if processed[0] == "update":
-            if processed[1] == "game":
-                if processed[2] == "field":
-                    root.update(processed[3].replace(";", ",").split[","])
-                if processed[2] == "round":
-                    connectfour.set_setting(processed[2], processed[3])
-                connectfour.set_setting(processed[1], processed[2])
-        if processed[0] == "action":
-            connectfour.set_setting("current_time", processed[2])
-            connectfour.go()
