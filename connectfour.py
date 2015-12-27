@@ -106,14 +106,12 @@ class Root_Node:
         return [x for x in range(0, 7) if self.board[0][x] == 0]
     def score(self): # todo detect hanging threats sooner, its faster
         if self.current_score != "nan":
-            return self.current_score
+            #return self.current_score
+            pass
         score = 0
         # we only return winning score for wins we can see, not forced wins though tempo, since we might lose a tempo
         winning_score = 999999
 
-        def same_sign(x, y):
-            return math.copysign(1, x) == math.copysign(1, y)
-        
         hanging_threats = []
         immeadiate_threats = []
         for threat in self.threats:
@@ -121,8 +119,10 @@ class Root_Node:
                 hanging_threats.append(threat)
             else:
                 immeadiate_threats.append(threat)
-        if len(filter(lambda x: same_sign(x, self.side_to_move), immeadiate_threats)) >= 1:
-            return winning_score
+        
+        for threat in immeadiate_threats:
+            if math.copysign(1, threat) == self.side_to_move:
+                return winning_score
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
         score += len(filter(lambda x: x > 0, self.threats))
         score -= len(filter(lambda x: x < 0, self.threats))
@@ -180,14 +180,18 @@ class Game:
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
     def negamax(self, node, depth, color): # color might be taken care of by 
-        if depth == 0 or node.score() > 99999:
+        if depth == 0 or abs(node.score()) > 99999:
+            if abs(node.score()) > 99999:
+                node.display_board()
+                print ""
             return color * node.score()
-        bestValue = - 999999
+        bestValue = -999999
         for child in node.legal_moves():
             self.nodes += 1
             current_child = node.export()
             current_child.make_move(child)
             bestValue = max(bestValue, -1 * self.negamax(current_child, depth -1, -1 * color))
+        
         return bestValue
         
         
@@ -202,6 +206,7 @@ class Game:
         #print self.nodes
         self.root.make_move((max(scores, key=lambda k: scores[k])))
         #print max(scores.values())
+        print scores
         print("place disc %s" % (max(scores, key=lambda k: scores[k])))
 
 if __name__ == "__main1__" :
