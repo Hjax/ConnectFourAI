@@ -111,7 +111,7 @@ class Root_Node:
             pass
         score = 0
         # we only return winning score for wins we can see, not forced wins though tempo, since we might lose a tempo
-        winning_score = 999999
+        winning_score = 9999999
 
         hanging_threats = []
         immeadiate_threats = []
@@ -120,10 +120,10 @@ class Root_Node:
                 hanging_threats.append(threat)
             else:
                 immeadiate_threats.append(threat)
-        
+        self.immeadiate_threats = immeadiate_threats
         for threat in immeadiate_threats:
             if math.copysign(1, threat) == self.side_to_move:
-                return winning_score
+                return winning_score * self.side_to_move
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
         score += len(filter(lambda x: x > 0, self.threats))
         score -= len(filter(lambda x: x < 0, self.threats))
@@ -201,6 +201,16 @@ class Game:
         
     def go(self):
         #time = self.current_move_time()
+        # if we can win, we must win, this might also block enemy threats
+        if abs(self.root.score()) > 99999:
+            if self.root.side_to_move == -1:
+                self.root.immeadiate_threats.sort()
+            else:
+                self.root.immeadiate_threats.sort()
+                self.root.immeadiate_threats.reverse()
+            stdout.write("place_disc %s" % (int(self.root.immeadiate_threats[0] % 7)) + '\n')
+            stdout.flush()
+            return
         if int(self.settings["current_time"]) < 1000:
             depth = 2
         elif int(self.settings["current_time"])< 5000:
@@ -212,6 +222,7 @@ class Game:
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
+        #print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
@@ -219,7 +230,7 @@ class Game:
             self.root.make_move((max(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
         stdout.flush()
-        self.root.display_board()
+        #self.root.display_board()
 
 if __name__ == "__main__" :
     connectfour = Game()
@@ -247,8 +258,8 @@ if __name__ == "__main1__" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 4000
-        connectfour.root.make_move(int(raw_input()))
         connectfour.go()
+        connectfour.root.make_move(int(raw_input()))
         connectfour.root.display_board()
 def test_speed():
     print ""
