@@ -22,7 +22,8 @@ class Root_Node:
         for row in range(0, 6):
             for column in range(0, 7):
                 self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
-        
+
+        self.current_score = "nan"
         self.threats = set() # set of int threats, sign determines side
         self.pieces_played = 0
         self.side_to_move = 1
@@ -104,6 +105,8 @@ class Root_Node:
     def legal_moves(self):
         return [x for x in range(0, 7) if self.board[0][x] == 0]
     def score(self): # todo detect hanging threats sooner, its faster
+        if self.current_score != "nan":
+            return self.current_score
         score = 0
         # we only return winning score for wins we can see, not forced wins though tempo, since we might lose a tempo
         winning_score = 999999
@@ -146,7 +149,8 @@ class Root_Node:
             if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
                 score += 500
             elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
-                score -= 500            
+                score -= 500
+        self.current_score = score
         return score
     def export(self):
         child = Root_Node()
@@ -164,6 +168,8 @@ class Root_Node:
 class Game:
     def __init__(self):
         self.settings = {}
+        self.nodes = 0
+        self.root = Root_Node()
     def set_setting(self, setting, value):
         self.settings[setting] = value
     def current_move_time(self): # returns the amount of time we are going to think for this move
@@ -173,17 +179,34 @@ class Game:
         current_round = int(self.settings["round"])
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
-    def negamax(self):
-        pass
+    def negamax(self, node, depth, color): # color might be taken care of by 
+        if depth == 0 or node.score() > 99999:
+            return color * node.score()
+        bestValue = - 999999
+        for child in node.legal_moves():
+            self.nodes += 1
+            current_child = node.export()
+            current_child.make_move(child)
+            bestValue = max(bestValue, -1 * self.negamax(current_child, depth -1, -1 * color))
+        return bestValue
+        
+        
     def go(self):
-        time = self.current_move_time()
-        print time
+       # time = self.current_move_time()
+       # print time
+        scores = {}
+        for child in self.root.legal_moves():
+            current_child = self.root.export()
+            current_child.make_move(child)
+            scores[child] = self.negamax(current_child, 3, current_child.side_to_move)
+        #print self.nodes
+        self.root.make_move((max(scores, key=lambda k: scores[k])))
+        #print max(scores.values())
+        print("place disc %s" % (max(scores, key=lambda k: scores[k])))
 
 if __name__ == "__main1__" :
     connectfour = Game()
     while True:
-
-        root = Root_Node()
         read_line = raw_input()
         processed = read_line.split(" ")
         if processed[0] == "settings":
@@ -191,14 +214,19 @@ if __name__ == "__main1__" :
         if processed[0] == "update":
             if processed[1] == "game":
                 if processed[2] == "field":
-                    root.update(processed[3].replace(";", ",").split[","])
+                    root.update(processed[3].replace(";", ",").split(","))
                 if processed[2] == "round":
                     connectfour.set_setting(processed[2], processed[3])
                 connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-
+if __name__ == "__main__" :
+    connectfour = Game()
+    while True:
+        connectfour.root.make_move(int(raw_input()))
+        connectfour.go()
+        connectfour.root.display_board()
 def test_speed():
     print ""
     for x in range(0, 3):
@@ -259,3 +287,4 @@ def test_node_export():
     assert bar.runs != foo.runs
     assert bar.threats != foo.threats
     assert bar.pieces_played != foo.pieces_played
+    assert bar.side_to_move != foo.side_to_move
