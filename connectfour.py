@@ -1,4 +1,5 @@
 import math, random, time
+import copy
 
 # so notes on keeping track of important things
 
@@ -147,7 +148,18 @@ class Root_Node:
             elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
                 score -= 500            
         return score
-        
+    def export(self):
+        child = Root_Node()
+        child.board = []
+        for x in self.board:
+            child.board.append(x[:])
+        child.runs = {}
+        for i in self.runs.keys():
+            child.runs[i] = self.runs[i][:]
+        child.threats = copy.copy(self.threats)
+        child.side_to_move = self.side_to_move
+        child.pieces_played = self.pieces_played
+        return child
 
 class Game:
     def __init__(self):
@@ -161,13 +173,13 @@ class Game:
         current_round = int(self.settings["round"])
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
-    def minimax(self):
+    def negamax(self):
         pass
     def go(self):
         time = self.current_move_time()
         print time
 
-if __name__ == "__main__":
+if __name__ == "__main1__" :
     connectfour = Game()
     while True:
 
@@ -234,3 +246,16 @@ def test_full_game():
         foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
+def test_node_export():
+    foo = Root_Node()
+    foo.make_move(0)
+    bar = foo.export()
+    foo.make_move(0)
+    foo.make_move(1)
+    foo.make_move(1)
+    foo.make_move(2)
+    foo.make_move(2)
+    assert bar.board != foo.board
+    assert bar.runs != foo.runs
+    assert bar.threats != foo.threats
+    assert bar.pieces_played != foo.pieces_played
