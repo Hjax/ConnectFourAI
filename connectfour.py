@@ -130,8 +130,10 @@ class Root_Node:
 
         taken = []
         for threat in hanging_threats:
-            taken.append(abs(threat))
-            taken.append(abs(threat) + 7)
+            if abs(threat) not in taken:
+                taken.append(abs(threat))
+            if (abs(threat) + 7) not in taken:
+                taken.append(abs(threat) + 7)
             clearer = self.traverse((int(threat / 7), int(threat % 7)), 3)
             next_step = clearer.next()
             while self.is_valid(next_step):
@@ -313,8 +315,6 @@ def test_full_game():
     for i in "4444452322223353347777362177555511111":
         foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
-    foo.display_board()
-    print foo.threats
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
 def test_node_export():
     foo = Root_Node()
