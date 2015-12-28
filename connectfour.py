@@ -209,7 +209,8 @@ class Game:
             else:
                 self.root.immeadiate_threats.sort()
                 self.root.immeadiate_threats.reverse()
-            #self.root.display_board()    
+            #self.root.display_board()
+            self.root.make_move(int(abs(self.root.immeadiate_threats[0]) % 7))
             stdout.write("place_disc %s" % (int(abs(self.root.immeadiate_threats[0]) % 7)) + '\n')
             stdout.flush()
             return
@@ -224,7 +225,7 @@ class Game:
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
-        print scores
+        #print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
@@ -232,7 +233,7 @@ class Game:
             self.root.make_move((max(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
         stdout.flush()
-        self.root.display_board()
+        #self.root.display_board()
 
 if __name__ == "__main__" :
     connectfour = Game()
@@ -259,8 +260,11 @@ if __name__ == "__main__" :
 if __name__ == "__main1__" :
     connectfour = Game()
     while True:
-        connectfour.settings['current_time'] = 4000
+        connectfour.settings['current_time'] = 6000
+        start = time.time()
         connectfour.go()
+        print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
+        connectfour.nodes = 0
         connectfour.root.make_move(int(raw_input()))
         connectfour.root.display_board()
 def test_speed():
