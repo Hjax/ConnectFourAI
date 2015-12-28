@@ -202,13 +202,15 @@ class Game:
     def go(self):
         #time = self.current_move_time()
         # if we can win, we must win, this might also block enemy threats
-        if abs(self.root.score()) > 99999:
+        self.root.score()
+        if len(self.root.immeadiate_threats) > 0:
             if self.root.side_to_move == -1:
                 self.root.immeadiate_threats.sort()
             else:
                 self.root.immeadiate_threats.sort()
                 self.root.immeadiate_threats.reverse()
-            stdout.write("place_disc %s" % (int(self.root.immeadiate_threats[0] % 7)) + '\n')
+            #self.root.display_board()    
+            stdout.write("place_disc %s" % (int(abs(self.root.immeadiate_threats[0]) % 7)) + '\n')
             stdout.flush()
             return
         if int(self.settings["current_time"]) < 1000:
@@ -222,7 +224,7 @@ class Game:
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
-        #print scores
+        print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
@@ -230,7 +232,7 @@ class Game:
             self.root.make_move((max(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
         stdout.flush()
-        #self.root.display_board()
+        self.root.display_board()
 
 if __name__ == "__main__" :
     connectfour = Game()
