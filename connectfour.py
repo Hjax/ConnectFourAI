@@ -31,7 +31,7 @@ class Root_Node:
         self.side_to_move = 1
 
     def reset_board(self):
-        self.trheats = set()
+        self.threats = set()
         self.won = False
         for row in range(0, 6):
             for column in range(0, 7):
@@ -211,7 +211,7 @@ class Game:
                 bestValue = min(bestValue, self.negamax(current_child, depth -1))
         
         return bestValue
-        
+    @profile
     def go(self):
         if int(self.settings["current_time"]) < 800:
             depth = 2
@@ -223,6 +223,7 @@ class Game:
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
+            # can put in a win checker here, but i really wanted minimax to do it
             scores[child] = self.negamax(current_child, depth)
         #print scores
         if self.root.side_to_move == -1:
@@ -269,19 +270,23 @@ def test_speed():
     print ""
     for x in range(0, 3):
         foo = Root_Node()
+        foo.reset_board()
         start = time.time()
         counter = 0
         while time.time() - start < 1:
             counter += 1
             if len(foo.legal_moves()) == 0 or foo.won:
                 foo = Root_Node()
+                foo.reset_board()
             else:
+                foo.export()
                 foo.make_move(random.choice(foo.legal_moves()))
                 foo.score()
         print counter
         assert counter > 1000
 def test_threats_simple():
     foo = Root_Node()
+    foo.reset_board()
     foo.make_move(0)
     foo.make_move(6)
     foo.make_move(1)
@@ -297,23 +302,27 @@ def test_threats_simple():
     assert 38 not in foo.threats
 def test_traverse():
     foo = Root_Node()
+    foo.reset_board()
     bar = foo.traverse((1, 2), 6)
     assert bar.next() == (2, 3)
     assert bar.next() == (3, 4)
 def test_square_validity():
     foo = Root_Node()
+    foo.reset_board()
     assert not foo.is_valid((-1, 5))
     for i in range(0, 7):
         for x in range(0, 6):
             assert foo.is_valid((x, i))
 def test_full_game():
     foo = Root_Node()
+    foo.reset_board()
     for i in "4444452322223353347777362177555511111":
         foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
 def test_node_export():
     foo = Root_Node()
+    foo.reset_board()
     foo.make_move(0)
     bar = foo.export()
     foo.make_move(0)
