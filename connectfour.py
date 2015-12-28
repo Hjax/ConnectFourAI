@@ -1,5 +1,6 @@
 import math, random, time
 import copy
+from profilehooks import profile
 from sys import stderr, stdin, stdout
 
 # so notes on keeping track of important things
@@ -12,7 +13,7 @@ from sys import stderr, stdin, stdout
 
 class Root_Node:
     def __init__(self):
-        self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
+        self.board = []
         self.runs = {}
         # how many squares to add to a location to move a certain direction on the grid
         self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
@@ -21,17 +22,21 @@ class Root_Node:
             #       2 3 4
             #       1 A 5
             #       0 7 6
-        for row in range(0, 6):
-            for column in range(0, 7):
-                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
+
         # becomes true when there is a four in a row on the board
         self.won = False
-        self.current_score = "nan"
-        # todo if a winning pieces gets put in a threat, mark the board as a win
+
         self.threats = set() # set of int threats, sign determines side
         self.pieces_played = 0
         self.side_to_move = 1
 
+    def reset_board(self):
+        self.trheats = set()
+        self.won = False
+        for row in range(0, 6):
+            for column in range(0, 7):
+                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
@@ -43,10 +48,9 @@ class Root_Node:
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
-        if self.is_valid(current_loc):
+        starting_value = 0
+        if math.copysign(1, self.runs[square][self.opposite[direction]]) == base_board_value:
             starting_value = abs(self.runs[square][self.opposite[direction]])
-        if math.copysign(1, self.runs[square][self.opposite[direction]]) != base_board_value:
-            starting_value = 0
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
             starting_value += 1
@@ -63,14 +67,13 @@ class Root_Node:
             current_loc = path.next()
 
     # HELPER FUNCTIONS FOR BOARD INTERACTION
-    def number_to_board_value(self, n): # given a number (0-41) returns the value of that board location
-        return self.board[int(n / 7)][int(n % 7)]
+	# if we are going to have these functions they should be memoized
     def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
         return t[0] * 7 + t[1]
     def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
         current_loc = location
         while True:
-            current_loc = self.traverse_step(current_loc, direction)
+            current_loc = (current_loc[0] + self.dmap[direction][0], current_loc[1] + self.dmap[direction][1])
             yield current_loc
     def traverse_step(self, location, direction):
         return (location[0] + self.dmap[direction][0], location[1] + self.dmap[direction][1])
@@ -115,10 +118,6 @@ class Root_Node:
     def legal_moves(self):
         return [x for x in range(0, 7) if self.board[0][x] == 0]
     def score(self): # todo detect hanging threats sooner, its faster
-        if self.current_score != "nan":
-            # this breaks scoring the root since its updated
-            return self.current_score
-            #pass
         score = 0
 
         # i think we can always assume that the person who won did it last move
@@ -127,11 +126,11 @@ class Root_Node:
         hanging_threats = []
         immeadiate_threats = []
         for threat in self.threats:
-            if abs(threat) + 7 in range(0, 42) and self.number_to_board_value(abs(threat) + 7) == 0:
+			# if the square below the threat is valid and is empty
+            if abs(threat) + 7 in range(0, 42) and self.board[int((abs(threat) + 7) / 7)][int((abs(threat) + 7) % 7)] == 0:
                 hanging_threats.append(threat)
             else:
                 immeadiate_threats.append(threat)
-        self.immeadiate_threats = immeadiate_threats
         for threat in immeadiate_threats:
             if math.copysign(1, threat) == self.side_to_move:
                 return 9999 * self.side_to_move
@@ -164,7 +163,6 @@ class Root_Node:
                 score += 500
             elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
                 score -= 500
-        self.current_score = score
         return score
     def export(self):
         child = Root_Node()
@@ -185,6 +183,7 @@ class Game:
         self.nodes = 0
         self.leaves = 0
         self.root = Root_Node()
+        self.root.reset_board()
     def set_setting(self, setting, value):
         self.settings[setting] = value
     def current_move_time(self): # returns the amount of time we are going to think for this move
@@ -213,7 +212,6 @@ class Game:
         
         return bestValue
         
-        
     def go(self):
         if int(self.settings["current_time"]) < 800:
             depth = 2
@@ -235,7 +233,7 @@ class Game:
             stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
         stdout.flush()
 
-if __name__ == "__main__" :
+if __name__ == "__main1__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
