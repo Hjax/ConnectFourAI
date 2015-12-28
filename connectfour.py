@@ -1,6 +1,5 @@
 import math, random, time
 import copy
-from profilehooks import profile
 from sys import stderr, stdin, stdout
 
 # so notes on keeping track of important things
@@ -211,7 +210,6 @@ class Game:
                 bestValue = min(bestValue, self.negamax(current_child, depth -1))
         
         return bestValue
-    @profile
     def go(self):
         if int(self.settings["current_time"]) < 800:
             depth = 2
