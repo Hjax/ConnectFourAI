@@ -87,7 +87,7 @@ class Root_Node:
                
     def display_board(self):
         for row in self.board:
-            print row
+            print map(lambda x: x.zfill(2), map(str, row))
     def make_move(self, column):
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
@@ -227,7 +227,6 @@ class Game:
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
-        #print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
