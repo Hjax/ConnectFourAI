@@ -111,13 +111,14 @@ class Root_Node:
                     self.update_direction(( (len(self.board) - 1) - row, column), direction)
                 self.side_to_move *= -1
                 break
+        self.current_score = "nan"
     def legal_moves(self):
         return [x for x in range(0, 7) if self.board[0][x] == 0]
     def score(self): # todo detect hanging threats sooner, its faster
         if self.current_score != "nan":
             # this breaks scoring the root since its updated
-            #return self.current_score
-            pass
+            return self.current_score
+            #pass
         score = 0
 
         # i think we can always assume that the person who won did it last move
@@ -274,7 +275,7 @@ def test_speed():
         counter = 0
         while time.time() - start < 1:
             counter += 1
-            if len(foo.legal_moves()) == 0:
+            if len(foo.legal_moves()) == 0 or foo.won:
                 foo = Root_Node()
             else:
                 foo.make_move(random.choice(foo.legal_moves()))
