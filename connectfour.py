@@ -25,6 +25,7 @@ class Root_Node:
                 self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
 
         self.current_score = "nan"
+        # todo if a winning pieces gets put in a threat, mark the board as a win
         self.threats = set() # set of int threats, sign determines side
         self.pieces_played = 0
         self.side_to_move = 1
@@ -183,6 +184,7 @@ class Game:
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
     def negamax(self, node, depth):
+        self.nodes += 1
         if depth == 0 or abs(node.score()) > 99999:
             return node.score()
         if node.side_to_move == 1:
@@ -190,7 +192,6 @@ class Game:
         else:
             bestValue = 99999999
         for child in node.legal_moves():
-            self.nodes += 1
             current_child = node.export()
             current_child.make_move(child)
             if node.side_to_move == 1:
@@ -216,9 +217,9 @@ class Game:
             stdout.write("place_disc %s" % (int(abs(self.root.immeadiate_threats[0]) % 7)) + '\n')
             stdout.flush()
             return
-        if int(self.settings["current_time"]) < 1000:
+        elif int(self.settings["current_time"]) < 800:
             depth = 2
-        elif int(self.settings["current_time"])< 5000:
+        elif int(self.settings["current_time"]) < 2000:
             depth = 3
         else:
             depth = 4
@@ -227,6 +228,7 @@ class Game:
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
+        print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
