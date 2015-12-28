@@ -16,6 +16,7 @@ class Root_Node:
         self.runs = {}
         # how many squares to add to a location to move a certain direction on the grid
         self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
+        # the opposite of each direction, might be better to do + 4 % 7 or something
         self.opposite = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
             #       2 3 4
             #       1 A 5
@@ -23,7 +24,8 @@ class Root_Node:
         for row in range(0, 6):
             for column in range(0, 7):
                 self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
-
+        # becomes true when there is a four in a row on the board
+        self.won = False
         self.current_score = "nan"
         # todo if a winning pieces gets put in a threat, mark the board as a win
         self.threats = set() # set of int threats, sign determines side
@@ -32,11 +34,12 @@ class Root_Node:
 
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
-            if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']: # TODO make sure this works
-                self.make_move(i % 7) # TODO theres a faster way to do this
+            if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
+                self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
                     
-    # note it isnt detecting enemy runs correctly
-    def update_direction(self, square, direction): # todo dont go down
+    def update_direction(self, square, direction): 
+        if direction == 7: # we dont need to traverse downwards 
+            return
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
@@ -81,7 +84,7 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
         if abs(opposite_direction) == 3:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite[direction]])]))
-        elif abs(first_direction + opposite_direction) >= 3:
+        elif abs(first_direction + opposite_direction) >= 3: # this is checked if A or not B, optimization?
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     def valid_directions(self, a):
         return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
@@ -97,8 +100,12 @@ class Root_Node:
                 self.pieces_played += 1
                 if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
                     self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+                    if math.copysign(1, self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                        self.won = True
                 if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
                     self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+                    if math.copysign(1, -1 * self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                        self.won = True
                 for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
                     
                     self.update_direction(( (len(self.board) - 1) - row, column), direction)
@@ -108,12 +115,14 @@ class Root_Node:
         return [x for x in range(0, 7) if self.board[0][x] == 0]
     def score(self): # todo detect hanging threats sooner, its faster
         if self.current_score != "nan":
+            # this breaks scoring the root since its updated
             #return self.current_score
             pass
         score = 0
-        # we only return winning score for wins we can see, not forced wins though tempo, since we might lose a tempo
-        winning_score = 9999999
 
+        # i think we can always assume that the person who won did it last move
+        if self.won:
+            return 10000 * -1 * self.side_to_move
         hanging_threats = []
         immeadiate_threats = []
         for threat in self.threats:
@@ -124,7 +133,7 @@ class Root_Node:
         self.immeadiate_threats = immeadiate_threats
         for threat in immeadiate_threats:
             if math.copysign(1, threat) == self.side_to_move:
-                return winning_score * self.side_to_move
+                return 9999 * self.side_to_move
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
         score += len(filter(lambda x: x > 0, self.threats))
         score -= len(filter(lambda x: x < 0, self.threats))
@@ -173,6 +182,7 @@ class Game:
     def __init__(self):
         self.settings = {}
         self.nodes = 0
+        self.leaves = 0
         self.root = Root_Node()
     def set_setting(self, setting, value):
         self.settings[setting] = value
@@ -185,12 +195,13 @@ class Game:
         return min(max(thinking_time, increment), current_time)
     def negamax(self, node, depth):
         self.nodes += 1
-        if depth == 0 or abs(node.score()) > 99999:
+        if depth == 0 or abs(node.score()) >= 9999:
+            self.leaves += 1
             return node.score()
         if node.side_to_move == 1:
-            bestValue = -99999999
+            bestValue = -10001
         else:
-            bestValue = 99999999
+            bestValue = 10001
         for child in node.legal_moves():
             current_child = node.export()
             current_child.make_move(child)
@@ -203,21 +214,7 @@ class Game:
         
         
     def go(self):
-        #time = self.current_move_time()
-        # if we can win, we must win, this might also block enemy threats
-        self.root.score()
-        if len(self.root.immeadiate_threats) > 0:
-            if self.root.side_to_move == -1:
-                self.root.immeadiate_threats.sort()
-            else:
-                self.root.immeadiate_threats.sort()
-                self.root.immeadiate_threats.reverse()
-            #self.root.display_board()
-            self.root.make_move(int(abs(self.root.immeadiate_threats[0]) % 7))
-            stdout.write("place_disc %s" % (int(abs(self.root.immeadiate_threats[0]) % 7)) + '\n')
-            stdout.flush()
-            return
-        elif int(self.settings["current_time"]) < 800:
+        if int(self.settings["current_time"]) < 800:
             depth = 2
         elif int(self.settings["current_time"]) < 2000:
             depth = 3
@@ -228,7 +225,7 @@ class Game:
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
-        print scores
+        #print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
@@ -236,7 +233,6 @@ class Game:
             self.root.make_move((max(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
         stdout.flush()
-        #self.root.display_board()
 
 if __name__ == "__main__" :
     connectfour = Game()
@@ -260,16 +256,16 @@ if __name__ == "__main__" :
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main1__" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
         start = time.time()
         connectfour.go()
         print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
+        connectfour.root.display_board()
         connectfour.nodes = 0
         connectfour.root.make_move(int(raw_input()))
-        connectfour.root.display_board()
 def test_speed():
     print ""
     for x in range(0, 3):
