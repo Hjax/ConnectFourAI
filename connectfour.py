@@ -246,9 +246,11 @@ class Game:
         self.tt = {}
         self.nodes = 0
         self.leaves = 0
-        if int(self.settings["current_time"]) < 1000:
+        if int(self.settings["current_time"]) < 600:
+            depth = 3
+        elif int(self.settings["current_time"]) < 2000:
             depth = 4
-        elif int(self.settings["current_time"]) < 3000:
+        elif int(self.settings["current_time"]) < 4500:
             depth = 5
         else:
             depth = 6
