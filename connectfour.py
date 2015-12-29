@@ -250,7 +250,7 @@ class Game:
             scores[child] = self.negamax(current_child, depth)
         stderr.write(str(scores) + '\n')
         stderr.flush()
-        if self.root.side_to_move == -1:
+        if self.root.side_to_move == 1:
             best = [-999999, ""]
             move = "no_move"
             for child in scores:
@@ -267,7 +267,8 @@ class Game:
                         if len(scores[child][1]) > len(best[1]):
                             best = scores[child]
                             move = child
-            stdout.write("place_disc %s" % (child) + "\n")
+            self.root.make_move(move)
+            stdout.write("place_disc %s" % (move) + "\n")
         else:
             best = [999999, ""]
             move = "no_move"
@@ -285,7 +286,8 @@ class Game:
                         if len(scores[child][1]) > len(best[1]):
                             best = scores[child]
                             move = child
-            stdout.write("place_disc %s" % (child) + "\n")
+            self.root.make_move(move)
+            stdout.write("place_disc %s" % (move) + "\n")
         stdout.flush()
 
 if __name__ == "__main__" :
