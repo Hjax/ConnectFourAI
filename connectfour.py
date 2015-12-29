@@ -196,35 +196,51 @@ class Game:
         current_round = int(self.settings["round"])
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
-    def negamax(self, node, depth):
+    def minimax(self, node, depth):
         self.nodes += 1
         if node.gethash() in self.tt:
             return self.tt[node.gethash()]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
             return [node.score(), ""]
-        # best value is a list with the score at 0 and the PV at 1
         if node.side_to_move == 1:
             bestValue = [-10001, ""]
-        else:
+            for child in node.legal_moves():
+                current_child = node.export()
+                current_child.make_move(child)
+                search = self.minimax(current_child, depth -1)
+                search[1] = str(child) + search[1]
+                if node.side_to_move == 1:
+                    if search[0] > bestValue[0]:
+                        bestValue = search
+                    elif search[0] == bestValue[0]:
+                        # if the score is good for the side to move, end the game sooner
+                        if search[0] >= 0:
+                            if len(search[1]) < len(bestValue[1]):
+                                bestValue = search
+                        else:
+                            if len(search[1]) > len(bestValue[1]):
+                                bestValue = search
+        if node.side_to_move == -1:
             bestValue = [10001, ""]
-        for child in node.legal_moves():
-            current_child = node.export()
-            current_child.make_move(child)
-            search = self.negamax(current_child, depth -1)
-            search[1] = str(child) + search[1]
-            if (search[0] > bestValue[0] and node.side_to_move == 1) or (search[0] < bestValue[0] and node.side_to_move == -1):
-                bestValue = search
-            elif search[0] == bestValue[0]:
-                # if the score is good for the side to move, end the game sooner
-                if (search[0] >= 0 and node.side_to_move == 1) or (search[0] <= 0 and node.side_to_move == -1):
-                    if len(search[1]) < len(bestValue[1]):
-                        bestValue = search
-                else:
-                    if len(search[1]) > len(bestValue[1]):
-                        bestValue = search
+            for child in node.legal_moves():
+                current_child = node.export()
+                current_child.make_move(child)
+                search = self.minimax(current_child, depth -1)
+                search[1] = str(child) + search[1]
+                if search[0] < bestValue[0]:
+                    bestValue = search
+                elif search[0] == bestValue[0]:
+                    # if the score is good for the side to move, end the game sooner
+                    if search[0] <= 0:
+                        if len(search[1]) < len(bestValue[1]):
+                            bestValue = search
+                    else:
+                        if len(search[1]) > len(bestValue[1]):
+                            bestValue = search
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
+        
     def go(self):
         # clear the tt before starting a search also clear stats
         self.tt = {}
@@ -242,7 +258,7 @@ class Game:
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            scores[child] = self.negamax(current_child, depth)
+            scores[child] = self.minimax(current_child, depth)
         if self.root.side_to_move == 1:
             best = [-999999, ""]
         else:
@@ -265,7 +281,7 @@ class Game:
         stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
 
-if __name__ == "__main__1" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
