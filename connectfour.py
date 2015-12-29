@@ -209,7 +209,7 @@ class Game:
                 if len(candidate[1]) > len(best[1]):
                     best = candidate
         return best
-    def minimax(self, node, depth):
+    def minimax(self, node, depth, alpha, beta):
         self.nodes += 1
         if node.gethash() in self.tt:
             return self.tt[node.gethash()]
@@ -221,17 +221,23 @@ class Game:
             for child in node.legal_moves():
                 current_child = node.export()
                 current_child.make_move(child)
-                search = self.minimax(current_child, depth -1)
+                search = self.minimax(current_child, depth - 1, alpha, beta)
                 search[1] = str(child) + search[1]
                 bestValue = self.pick_best(search, bestValue, node.side_to_move)
+                alpha = self.pick_best(bestValue, alpha, node.side_to_move)
+                if beta[0] <= alpha[0]:
+                    break
         elif node.side_to_move == -1:
             bestValue = [10001, ""]
             for child in node.legal_moves():
                 current_child = node.export()
                 current_child.make_move(child)
-                search = self.minimax(current_child, depth -1)
+                search = self.minimax(current_child, depth - 1, alpha, beta)
                 search[1] = str(child) + search[1]
                 bestValue = self.pick_best(search, bestValue, node.side_to_move)
+                beta = self.pick_best(bestValue, beta, node.side_to_move)
+                if beta[0] <= alpha[0]:
+                    break
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
         
@@ -252,7 +258,7 @@ class Game:
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            scores[child] = self.minimax(current_child, depth)
+            scores[child] = self.minimax(current_child, depth, [-9999999, ""], [9999999, ""])
         if self.root.side_to_move == 1:
             best = [-999999, ""]
         else:
