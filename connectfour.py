@@ -187,6 +187,11 @@ class Game:
         self.leaves = 0
         self.root = Root_Node()
         self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
+        self.history = {} # History uses negative values to avoid reversing the list
+    def clear_history(self):
+        for depth in range(0, 7):
+            for move in range(0, 7):
+                self.history[(move, depth)] = 0
     def set_setting(self, setting, value):
         self.settings[setting] = value
     def current_move_time(self): # returns the amount of time we are going to think for this move
@@ -218,7 +223,7 @@ class Game:
             return [node.score(), ""]
         if node.side_to_move == 1:
             bestValue = [-10001, ""]
-            for child in node.legal_moves():
+            for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
                 current_child = node.export()
                 current_child.make_move(child)
                 search = self.minimax(current_child, depth - 1, alpha, beta)
@@ -226,10 +231,11 @@ class Game:
                 bestValue = self.pick_best(search, bestValue, node.side_to_move)
                 alpha = self.pick_best(bestValue, alpha, node.side_to_move)[:]
                 if beta[0] <= alpha[0]:
+                    self.history[(child, depth)] -= 1
                     break
         elif node.side_to_move == -1:
             bestValue = [10001, ""]
-            for child in node.legal_moves():
+            for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
                 current_child = node.export()
                 current_child.make_move(child)
                 search = self.minimax(current_child, depth - 1, alpha, beta)
@@ -237,6 +243,7 @@ class Game:
                 bestValue = self.pick_best(search, bestValue, node.side_to_move)
                 beta = self.pick_best(bestValue, beta, node.side_to_move)[:]
                 if beta[0] <= alpha[0]:
+                    self.history[(child, depth)] -= 1
                     break
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
@@ -246,6 +253,7 @@ class Game:
         self.tt = {}
         self.nodes = 0
         self.leaves = 0
+        self.clear_history()
         if int(self.settings["current_time"]) < 600:
             depth = 3
         elif int(self.settings["current_time"]) < 2000:
@@ -283,7 +291,7 @@ class Game:
         stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
 
-if __name__ == "__main__" :
+if __name__ == "__main1__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -308,7 +316,7 @@ if __name__ == "__main__" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
