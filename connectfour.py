@@ -193,18 +193,29 @@ class Game:
         self.nodes += 1
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
-            return node.score()
+            return [node.score(), ""]
+        # best value is a list with the score at 0 and the PV at 1
         if node.side_to_move == 1:
-            bestValue = -10001
+            bestValue = [-10001, ""]
         else:
-            bestValue = 10001
+            bestValue = [10001, ""]
         for child in node.legal_moves():
             current_child = node.export()
             current_child.make_move(child)
+            search = self.negamax(current_child, depth -1)
+            search[1] = str(child) + search[1]
             if node.side_to_move == 1:
-                bestValue = max(bestValue, self.negamax(current_child, depth -1))
+                if search[0] > bestValue[0]:
+                    bestValue = search
+                elif search[0] == bestValue[0]:
+                    if len(search[1]) > len(bestValue[1]):
+                        bestValue = search
             else:
-                bestValue = min(bestValue, self.negamax(current_child, depth -1))
+                if search[0] < bestValue[0]:
+                    bestValue = search
+                elif search[0] == bestValue[0]:
+                    if len(search[1]) > len(bestValue[1]):
+                        bestValue = search
         
         return bestValue
     def go(self):
@@ -224,13 +235,13 @@ class Game:
                 stdout.flush()
                 return
             scores[child] = self.negamax(current_child, depth)
-        print scores
+        #print scores
         if self.root.side_to_move == -1:
-            self.root.make_move((min(scores, key=lambda k: scores[k])))
-            stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
+            self.root.make_move((min(scores, key=lambda k: scores[k][0])))
+            stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k][0])) + '\n')
         else:
-            self.root.make_move((max(scores, key=lambda k: scores[k])))
-            stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k])) + '\n')
+            self.root.make_move((max(scores, key=lambda k: scores[k][0])))
+            stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k][0])) + '\n')
         stdout.flush()
 
 if __name__ == "__main1__" :
