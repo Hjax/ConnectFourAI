@@ -91,7 +91,8 @@ class Root_Node:
                
     def display_board(self):
         for row in self.board:
-            print map(lambda x: x.zfill(2), map(str, row))
+            stderr.write(str(map(lambda x: x.zfill(2), map(str, row))) + '\n')
+            stderr.flush()
     def make_move(self, column):
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
@@ -208,23 +209,35 @@ class Game:
                 if search[0] > bestValue[0]:
                     bestValue = search
                 elif search[0] == bestValue[0]:
-                    if len(search[1]) > len(bestValue[1]):
-                        bestValue = search
+                    # if the score is good for the side to move, end the game sooner
+                    if search[0] >= 0:
+                        if len(search[1]) < len(bestValue[1]):
+                            bestValue = search
+                    else:
+                        if len(search[1]) > len(bestValue[1]):
+                            bestValue = search
             else:
                 if search[0] < bestValue[0]:
                     bestValue = search
                 elif search[0] == bestValue[0]:
-                    if len(search[1]) > len(bestValue[1]):
-                        bestValue = search
+                    # if the score is good for the side to move, end the game sooner
+                    if search[0] <= 0:
+                        if len(search[1]) < len(bestValue[1]):
+                            bestValue = search
+                    else:
+                        if len(search[1]) > len(bestValue[1]):
+                            bestValue = search
         
         return bestValue
     def go(self):
-        if int(self.settings["current_time"]) < 400:
+        if int(self.settings["current_time"]) < 1000:
             depth = 2
-        elif int(self.settings["current_time"]) < 1000:
+        elif int(self.settings["current_time"]) < 3000:
             depth = 3
         else:
             depth = 4
+        stderr.write("We are searching with depth %s \n" % (str(depth)))
+        stderr.flush()
         scores = {}
         for child in self.root.legal_moves():
             current_child = self.root.export()
@@ -235,16 +248,47 @@ class Game:
                 stdout.flush()
                 return
             scores[child] = self.negamax(current_child, depth)
-        #print scores
+        stderr.write(str(scores) + '\n')
+        stderr.flush()
         if self.root.side_to_move == -1:
-            self.root.make_move((min(scores, key=lambda k: scores[k][0])))
-            stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k][0])) + '\n')
+            best = [-999999, ""]
+            move = "no_move"
+            for child in scores:
+                if scores[child][0] > best[0]:
+                    best = scores[child]
+                    move = child
+                elif scores[child][0] == best[0]:
+                    # if the score is good for the side to move, end the game sooner
+                    if scores[child][0] >= 0:
+                        if len(scores[child][1]) < len(best[1]):
+                            best = scores[child]
+                            move = child
+                    else:
+                        if len(scores[child][1]) > len(best[1]):
+                            best = scores[child]
+                            move = child
+            stdout.write("place_disc %s" % (child) + "\n")
         else:
-            self.root.make_move((max(scores, key=lambda k: scores[k][0])))
-            stdout.write("place_disc %s" % (max(scores, key=lambda k: scores[k][0])) + '\n')
+            best = [999999, ""]
+            move = "no_move"
+            for child in scores:
+                if scores[child][0] < best[0]:
+                    best = scores[child]
+                    move = child
+                elif scores[child][0] == best[0]:
+                    # if the score is good for the side to move, end the game sooner
+                    if scores[child][0] <= 0:
+                        if len(scores[child][1]) < len(best[1]):
+                            best = scores[child]
+                            move = child
+                    else:
+                        if len(scores[child][1]) > len(best[1]):
+                            best = scores[child]
+                            move = child
+            stdout.write("place_disc %s" % (child) + "\n")
         stdout.flush()
 
-if __name__ == "__main1__" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -266,7 +310,7 @@ if __name__ == "__main1__" :
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
