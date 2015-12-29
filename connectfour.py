@@ -235,8 +235,7 @@ class Game:
                     else:
                         if len(search[1]) > len(bestValue[1]):
                             bestValue = search
-
-        self.tt[node.gethash()] = bestValue
+        self.tt[node.gethash()] = bestValue[:]
         return bestValue
     def go(self):
         # clear the tt before starting a search
@@ -301,7 +300,7 @@ class Game:
             stdout.write("place_disc %s" % (move) + "\n")
         stdout.flush()
 
-if __name__ == "__main__1" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -323,7 +322,7 @@ if __name__ == "__main__1" :
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
