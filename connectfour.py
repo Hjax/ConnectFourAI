@@ -240,52 +240,30 @@ class Game:
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            if current_child.score == 10000 * self.root.side_to_move:
-                self.root.make_move(child)
-                stdout.write("place_disc %s" % (child) + '\n')
-                stdout.flush()
-                return
             scores[child] = self.negamax(current_child, depth)
         stderr.write(str(scores) + '\n')
         stderr.flush()
         if self.root.side_to_move == 1:
             best = [-999999, ""]
-            move = "no_move"
-            for child in scores:
-                if scores[child][0] > best[0]:
-                    best = scores[child]
-                    move = child
-                elif scores[child][0] == best[0]:
-                    # if the score is good for the side to move, end the game sooner
-                    if scores[child][0] >= 0:
-                        if len(scores[child][1]) < len(best[1]):
-                            best = scores[child]
-                            move = child
-                    else:
-                        if len(scores[child][1]) > len(best[1]):
-                            best = scores[child]
-                            move = child
-            self.root.make_move(move)
-            stdout.write("place_disc %s" % (move) + "\n")
         else:
             best = [999999, ""]
-            move = "no_move"
-            for child in scores:
-                if scores[child][0] < best[0]:
-                    best = scores[child]
-                    move = child
-                elif scores[child][0] == best[0]:
-                    # if the score is good for the side to move, end the game sooner
-                    if scores[child][0] <= 0:
-                        if len(scores[child][1]) < len(best[1]):
-                            best = scores[child]
-                            move = child
-                    else:
-                        if len(scores[child][1]) > len(best[1]):
-                            best = scores[child]
-                            move = child
-            self.root.make_move(move)
-            stdout.write("place_disc %s" % (move) + "\n")
+        move = "no_move"
+        for child in scores:
+            if (scores[child][0] > best[0] and self.root.side_to_move == 1) or (scores[child][0] < best[0] and self.root.side_to_move == -1):
+                best = scores[child]
+                move = child
+            elif scores[child][0] == best[0]:
+                # if the score is good for the side to move, end the game sooner
+                if (scores[child][0] >= 0 and self.root.side_to_move == 1) or (scores[child][0] <= 0 and self.root.side_to_move == -1):
+                    if len(scores[child][1]) < len(best[1]):
+                        best = scores[child]
+                        move = child
+                else:
+                    if len(scores[child][1]) > len(best[1]):
+                        best = scores[child]
+                        move = child
+        self.root.make_move(move)
+        stdout.write("place_disc %s" % (move) + "\n")
         stdout.flush()
 
 if __name__ == "__main__1" :
