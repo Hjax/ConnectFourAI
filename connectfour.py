@@ -226,8 +226,10 @@ class Game:
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
     def go(self):
-        # clear the tt before starting a search
+        # clear the tt before starting a search also clear stats
         self.tt = {}
+        self.nodes = 0
+        self.leaves = 0
         if int(self.settings["current_time"]) < 1000:
             depth = 2
         elif int(self.settings["current_time"]) < 3000:
@@ -266,7 +268,7 @@ class Game:
         stdout.write("place_disc %s" % (move) + "\n")
         stdout.flush()
 
-if __name__ == "__main__1" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -291,7 +293,7 @@ if __name__ == "__main__1" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
