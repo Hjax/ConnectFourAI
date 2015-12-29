@@ -213,28 +213,16 @@ class Game:
             current_child.make_move(child)
             search = self.negamax(current_child, depth -1)
             search[1] = str(child) + search[1]
-            if node.side_to_move == 1:
-                if search[0] > bestValue[0]:
-                    bestValue = search
-                elif search[0] == bestValue[0]:
-                    # if the score is good for the side to move, end the game sooner
-                    if search[0] >= 0:
-                        if len(search[1]) < len(bestValue[1]):
-                            bestValue = search
-                    else:
-                        if len(search[1]) > len(bestValue[1]):
-                            bestValue = search
-            else:
-                if search[0] < bestValue[0]:
-                    bestValue = search
-                elif search[0] == bestValue[0]:
-                    # if the score is good for the side to move, end the game sooner
-                    if search[0] <= 0:
-                        if len(search[1]) < len(bestValue[1]):
-                            bestValue = search
-                    else:
-                        if len(search[1]) > len(bestValue[1]):
-                            bestValue = search
+            if (search[0] > bestValue[0] and node.side_to_move == 1) or (search[0] < bestValue[0] and node.side_to_move == -1):
+                bestValue = search
+            elif search[0] == bestValue[0]:
+                # if the score is good for the side to move, end the game sooner
+                if (search[0] >= 0 and node.side_to_move == 1) or (search[0] <= 0 and node.side_to_move == -1):
+                    if len(search[1]) < len(bestValue[1]):
+                        bestValue = search
+                else:
+                    if len(search[1]) > len(bestValue[1]):
+                        bestValue = search
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
     def go(self):
@@ -300,7 +288,7 @@ class Game:
             stdout.write("place_disc %s" % (move) + "\n")
         stdout.flush()
 
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -325,7 +313,7 @@ if __name__ == "__main__" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__1" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
