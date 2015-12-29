@@ -196,6 +196,19 @@ class Game:
         current_round = int(self.settings["round"])
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
+    def pick_best(self, candidate, _best, side_to_move):
+        best = _best
+        if (candidate[0] > best[0] and side_to_move == 1) or (candidate[0] < best[0] and side_to_move == -1):
+            best = candidate
+        elif candidate[0] == best[0]:
+            # if the score is good for the side to move, end the game sooner
+            if (candidate[0] >= 0 and side_to_move == 1) or (candidate[0] <= 0 and side_to_move == -1):
+                if len(candidate[1]) < len(best[1]):
+                    best = candidate
+            else:
+                if len(candidate[1]) > len(best[1]):
+                    best = candidate
+        return best
     def minimax(self, node, depth):
         self.nodes += 1
         if node.gethash() in self.tt:
@@ -210,34 +223,15 @@ class Game:
                 current_child.make_move(child)
                 search = self.minimax(current_child, depth -1)
                 search[1] = str(child) + search[1]
-                if node.side_to_move == 1:
-                    if search[0] > bestValue[0]:
-                        bestValue = search
-                    elif search[0] == bestValue[0]:
-                        # if the score is good for the side to move, end the game sooner
-                        if search[0] >= 0:
-                            if len(search[1]) < len(bestValue[1]):
-                                bestValue = search
-                        else:
-                            if len(search[1]) > len(bestValue[1]):
-                                bestValue = search
-        if node.side_to_move == -1:
+                bestValue = self.pick_best(search, bestValue, node.side_to_move)
+        elif node.side_to_move == -1:
             bestValue = [10001, ""]
             for child in node.legal_moves():
                 current_child = node.export()
                 current_child.make_move(child)
                 search = self.minimax(current_child, depth -1)
                 search[1] = str(child) + search[1]
-                if search[0] < bestValue[0]:
-                    bestValue = search
-                elif search[0] == bestValue[0]:
-                    # if the score is good for the side to move, end the game sooner
-                    if search[0] <= 0:
-                        if len(search[1]) < len(bestValue[1]):
-                            bestValue = search
-                    else:
-                        if len(search[1]) > len(bestValue[1]):
-                            bestValue = search
+                bestValue = self.pick_best(search, bestValue, node.side_to_move)
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
         
