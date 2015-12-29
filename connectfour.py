@@ -224,7 +224,7 @@ class Game:
                 search = self.minimax(current_child, depth - 1, alpha, beta)
                 search[1] = str(child) + search[1]
                 bestValue = self.pick_best(search, bestValue, node.side_to_move)
-                alpha = self.pick_best(bestValue, alpha, node.side_to_move)
+                alpha = self.pick_best(bestValue, alpha, node.side_to_move)[:]
                 if beta[0] <= alpha[0]:
                     break
         elif node.side_to_move == -1:
@@ -235,7 +235,7 @@ class Game:
                 search = self.minimax(current_child, depth - 1, alpha, beta)
                 search[1] = str(child) + search[1]
                 bestValue = self.pick_best(search, bestValue, node.side_to_move)
-                beta = self.pick_best(bestValue, beta, node.side_to_move)
+                beta = self.pick_best(bestValue, beta, node.side_to_move)[:]
                 if beta[0] <= alpha[0]:
                     break
         self.tt[node.gethash()] = bestValue[:]
@@ -247,11 +247,11 @@ class Game:
         self.nodes = 0
         self.leaves = 0
         if int(self.settings["current_time"]) < 1000:
-            depth = 2
-        elif int(self.settings["current_time"]) < 3000:
-            depth = 3
-        else:
             depth = 4
+        elif int(self.settings["current_time"]) < 3000:
+            depth = 5
+        else:
+            depth = 6
         stderr.write("We are searching with depth %s \n" % (str(depth + 1)))
         stderr.flush()
         scores = {}
@@ -281,7 +281,7 @@ class Game:
         stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
 
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -306,7 +306,7 @@ if __name__ == "__main_1_" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
