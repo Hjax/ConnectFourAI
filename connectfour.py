@@ -11,9 +11,14 @@ from sys import stderr, stdin, stdout
 # self.board[row][column]
 
 class Root_Node:
-    def __init__(self):
+    def __init__(self, setup=True):
         self.board = []
         self.runs = {}
+        if setup:
+            for row in range(0, 6):
+                for column in range(0, 7):
+                    self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
+            self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
         # how many squares to add to a location to move a certain direction on the grid
         self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
         # the opposite of each direction, might be better to do + 4 % 7 or something
@@ -28,14 +33,7 @@ class Root_Node:
         self.threats = set() # set of int threats, sign determines side
         self.pieces_played = 0
         self.side_to_move = 1
-
-    def reset_board(self):
-        self.threats = set()
-        self.won = False
-        for row in range(0, 6):
-            for column in range(0, 7):
-                self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
-        self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
+        
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
@@ -164,7 +162,7 @@ class Root_Node:
                 score -= 500
         return score
     def export(self):
-        child = Root_Node()
+        child = Root_Node(False)
         child.board = []
         for x in self.board:
             child.board.append(x[:])
@@ -182,7 +180,6 @@ class Game:
         self.nodes = 0
         self.leaves = 0
         self.root = Root_Node()
-        self.root.reset_board()
     def set_setting(self, setting, value):
         self.settings[setting] = value
     def current_move_time(self): # returns the amount of time we are going to think for this move
@@ -194,7 +191,7 @@ class Game:
         return min(max(thinking_time, increment), current_time)
     def negamax(self, node, depth):
         self.nodes += 1
-        if depth == 0 or abs(node.score()) >= 9999:
+        if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
             return node.score()
         if node.side_to_move == 1:
@@ -211,9 +208,9 @@ class Game:
         
         return bestValue
     def go(self):
-        if int(self.settings["current_time"]) < 800:
+        if int(self.settings["current_time"]) < 400:
             depth = 2
-        elif int(self.settings["current_time"]) < 2000:
+        elif int(self.settings["current_time"]) < 1000:
             depth = 3
         else:
             depth = 4
@@ -221,9 +218,13 @@ class Game:
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
-            # can put in a win checker here, but i really wanted minimax to do it
+            if current_child.score == 10000 * self.root.side_to_move:
+                self.root.make_move(child)
+                stdout.write("place_disc %s" % (child) + '\n')
+                stdout.flush()
+                return
             scores[child] = self.negamax(current_child, depth)
-        #print scores
+        print scores
         if self.root.side_to_move == -1:
             self.root.make_move((min(scores, key=lambda k: scores[k])))
             stdout.write("place_disc %s" % (min(scores, key=lambda k: scores[k])) + '\n')
@@ -268,14 +269,12 @@ def test_speed():
     print ""
     for x in range(0, 3):
         foo = Root_Node()
-        foo.reset_board()
         start = time.time()
         counter = 0
         while time.time() - start < 1:
             counter += 1
             if len(foo.legal_moves()) == 0 or foo.won:
                 foo = Root_Node()
-                foo.reset_board()
             else:
                 foo.export()
                 foo.make_move(random.choice(foo.legal_moves()))
@@ -284,7 +283,6 @@ def test_speed():
         assert counter > 1000
 def test_threats_simple():
     foo = Root_Node()
-    foo.reset_board()
     foo.make_move(0)
     foo.make_move(6)
     foo.make_move(1)
@@ -300,27 +298,23 @@ def test_threats_simple():
     assert 38 not in foo.threats
 def test_traverse():
     foo = Root_Node()
-    foo.reset_board()
     bar = foo.traverse((1, 2), 6)
     assert bar.next() == (2, 3)
     assert bar.next() == (3, 4)
 def test_square_validity():
     foo = Root_Node()
-    foo.reset_board()
     assert not foo.is_valid((-1, 5))
     for i in range(0, 7):
         for x in range(0, 6):
             assert foo.is_valid((x, i))
 def test_full_game():
     foo = Root_Node()
-    foo.reset_board()
     for i in "4444452322223353347777362177555511111":
         foo.make_move(int(i) - 1)
     assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
     assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
 def test_node_export():
     foo = Root_Node()
-    foo.reset_board()
     foo.make_move(0)
     bar = foo.export()
     foo.make_move(0)
