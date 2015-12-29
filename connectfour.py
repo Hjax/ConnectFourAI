@@ -236,39 +236,36 @@ class Game:
             depth = 3
         else:
             depth = 4
-        stderr.write("We are searching with depth %s \n" % (str(depth)))
+        stderr.write("We are searching with depth %s \n" % (str(depth + 1)))
         stderr.flush()
         scores = {}
         for child in self.root.legal_moves():
             current_child = self.root.export()
             current_child.make_move(child)
             scores[child] = self.negamax(current_child, depth)
-        stderr.write(str(scores) + '\n')
-        stderr.flush()
         if self.root.side_to_move == 1:
             best = [-999999, ""]
         else:
             best = [999999, ""]
-        move = "no_move"
         for child in scores:
+            scores[child][1] = str(child) + scores[child][1]
             if (scores[child][0] > best[0] and self.root.side_to_move == 1) or (scores[child][0] < best[0] and self.root.side_to_move == -1):
                 best = scores[child]
-                move = child
             elif scores[child][0] == best[0]:
                 # if the score is good for the side to move, end the game sooner
                 if (scores[child][0] >= 0 and self.root.side_to_move == 1) or (scores[child][0] <= 0 and self.root.side_to_move == -1):
                     if len(scores[child][1]) < len(best[1]):
                         best = scores[child]
-                        move = child
                 else:
                     if len(scores[child][1]) > len(best[1]):
                         best = scores[child]
-                        move = child
-        self.root.make_move(move)
-        stdout.write("place_disc %s" % (move) + "\n")
+        stderr.write(str(scores) + '\n')
+        stderr.flush()
+        self.root.make_move(int(best[1][0]))
+        stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
 
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -293,7 +290,7 @@ if __name__ == "__main__" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__1" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
