@@ -33,7 +33,12 @@ class Root_Node:
         self.threats = set() # set of int threats, sign determines side
         self.pieces_played = 0
         self.side_to_move = 1
-        
+    def gethash(self):
+        result = ""
+        for i in self.board:
+            result = result + "".join(map(str, i))
+        return result
+    
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
@@ -181,6 +186,7 @@ class Game:
         self.nodes = 0
         self.leaves = 0
         self.root = Root_Node()
+        self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
     def set_setting(self, setting, value):
         self.settings[setting] = value
     def current_move_time(self): # returns the amount of time we are going to think for this move
@@ -192,6 +198,9 @@ class Game:
         return min(max(thinking_time, increment), current_time)
     def negamax(self, node, depth):
         self.nodes += 1
+        if node.gethash() in self.tt:
+            if self.tt[node.gethash()][0] == depth:
+                return self.tt[node.gethash()][1]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
             return [node.score(), ""]
@@ -227,7 +236,7 @@ class Game:
                     else:
                         if len(search[1]) > len(bestValue[1]):
                             bestValue = search
-        
+        self.tt[node.gethash()] = [depth, bestValue]
         return bestValue
     def go(self):
         if int(self.settings["current_time"]) < 1000:
