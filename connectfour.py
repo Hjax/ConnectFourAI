@@ -119,7 +119,7 @@ class Root_Node:
                 break
         self.current_score = "nan"
     def legal_moves(self):
-        return [x for x in range(0, 7) if self.board[0][x] == 0]
+        return sorted([x for x in range(0, 7) if self.board[0][x] == 0], key=lambda k: abs(3 - k))
     def score(self): # todo detect hanging threats sooner, its faster
         score = 0
 
