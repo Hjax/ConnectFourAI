@@ -320,8 +320,11 @@ if __name__ == "__main__" :
                     connectfour.set_setting(processed[2], processed[3])
                 connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "action":
+            start = time.time()
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
+            stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
+            stderr.flush()
 if __name__ == "__main__1" :
     connectfour = Game()
     while True:
