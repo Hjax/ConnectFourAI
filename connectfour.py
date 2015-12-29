@@ -273,7 +273,7 @@ class Game:
             best = [-999999, ""]
         else:
             best = [999999, ""]
-        for child in scores:
+        for child in self.root.legal_moves():
             scores[child][1] = str(child) + scores[child][1]
             if (scores[child][0] > best[0] and self.root.side_to_move == 1) or (scores[child][0] < best[0] and self.root.side_to_move == -1):
                 best = scores[child]
@@ -291,7 +291,7 @@ class Game:
         stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
 
-if __name__ == "__main1__" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -316,7 +316,7 @@ if __name__ == "__main1__" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
