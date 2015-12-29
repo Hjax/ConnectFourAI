@@ -199,8 +199,7 @@ class Game:
     def negamax(self, node, depth):
         self.nodes += 1
         if node.gethash() in self.tt:
-            if self.tt[node.gethash()][0] == depth:
-                return self.tt[node.gethash()][1]
+            return self.tt[node.gethash()]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
             return [node.score(), ""]
@@ -236,9 +235,12 @@ class Game:
                     else:
                         if len(search[1]) > len(bestValue[1]):
                             bestValue = search
-        self.tt[node.gethash()] = [depth, bestValue]
+
+        self.tt[node.gethash()] = bestValue
         return bestValue
     def go(self):
+        # clear the tt before starting a search
+        self.tt = {}
         if int(self.settings["current_time"]) < 1000:
             depth = 2
         elif int(self.settings["current_time"]) < 3000:
@@ -299,7 +301,7 @@ class Game:
             stdout.write("place_disc %s" % (move) + "\n")
         stdout.flush()
 
-if __name__ == "__main__" :
+if __name__ == "__main__1" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -321,7 +323,7 @@ if __name__ == "__main__" :
         if processed[0] == "action":
             connectfour.set_setting("current_time", processed[2])
             connectfour.go()
-if __name__ == "__main__1" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
