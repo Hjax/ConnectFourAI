@@ -290,6 +290,7 @@ class Game:
         self.root.make_move(int(best[1][0]))
         stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
+        return best[1][0]
 
 if __name__ == "__main__" :
     connectfour = Game()
