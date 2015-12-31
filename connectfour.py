@@ -138,10 +138,6 @@ class Root_Node:
             if math.copysign(1, threat) == self.side_to_move:
                 return 9999 * self.side_to_move
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
-
-        even_threats = set([x for x in hanging_threats if (abs(x) / 7) % 2 == 0])
-        odd_threats = set([x for x in hanging_threats if (abs(x) / 7) % 2 == 1])
-        
         score += len(filter(lambda x: x > 0, self.threats))
         score -= len(filter(lambda x: x < 0, self.threats))
 
@@ -157,22 +153,18 @@ class Root_Node:
                 if self.board_tuple_to_number(next_step) not in taken:
                     taken.append(self.board_tuple_to_number(next_step))
                     next_step = clearer.next()
-                    if -1 * math.copysign(1, threat) * self.board_tuple_to_number(next_step) in even_threats and threat in even_threats:
-                        even_threats.remove(-1 * math.copysign(1, threat) * self.board_tuple_to_number(next_step))
-                    elif -1 * math.copysign(1, threat) * self.board_tuple_to_number(next_step) in odd_threats and threat in odd_threats:
-                        odd_threats.remove(-1 * math.copysign(1, threat) * self.board_tuple_to_number(next_step))
                 else:
                     break
         # you want it to be odd when its your turn to move, even otherwise
         if self.side_to_move == 1:
-            if len(filter(lambda x: x > 0, even_threats.union(odd_threats))) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
+            if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
                 score += 500
-            elif len(filter(lambda x: x < 0, even_threats.union(odd_threats))) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
+            elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
                 score -= 500
         else:
-            if len(filter(lambda x: x > 0, even_threats.union(odd_threats))) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
+            if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
                 score += 500
-            elif len(filter(lambda x: x < 0, even_threats.union(odd_threats))) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
+            elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
                 score -= 500
         return score
     def export(self):
