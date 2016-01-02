@@ -34,10 +34,7 @@ class Root_Node:
         self.pieces_played = 0
         self.side_to_move = 1
     def gethash(self):
-        result = ""
-        for i in self.board:
-            result = result + "".join(map(str, i))
-        return result
+        return str(self.board)
     
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
@@ -241,7 +238,7 @@ class Game:
                     break
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
-        
+
     def go(self):
         # clear the tt before starting a search also clear stats
         self.tt = {}
