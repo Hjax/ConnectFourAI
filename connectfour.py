@@ -50,19 +50,17 @@ class Root_Node:
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
-        starting_value = 0
+        starting_value = 1
         if math.copysign(1, self.runs[square][self.opposite[direction]]) == base_board_value:
-            starting_value = abs(self.runs[square][self.opposite[direction]])
+            starting_value = abs(self.runs[square][self.opposite[direction]]) + 1
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
-            starting_value += 1
             if current_board_value == 0:
-                # the following line might need to be just =
                 self.runs[current_loc][self.opposite[direction]] = starting_value * base_board_value
                 self.update_threats(current_loc, direction)
                 break # we break when we hit an enemy or blank block
             elif current_board_value == base_board_value:
-                pass
+                starting_value += 1
             else:
                 break
                 # we are at an enemy square, break
@@ -169,12 +167,8 @@ class Root_Node:
         return score
     def export(self):
         child = Root_Node(False)
-        child.board = []
-        for x in self.board:
-            child.board.append(x[:])
-        child.runs = {}
-        for i in self.runs.keys():
-            child.runs[i] = self.runs[i][:]
+        child.board = [x[:] for x in self.board]
+        child.runs = {k:v[:] for k,v in self.runs.items()}
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
