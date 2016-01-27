@@ -45,7 +45,7 @@ class Root_Node:
         if direction == 7: # we dont need to traverse downwards 
             return
         path = self.traverse(square, direction)
-        current_loc = next(path)
+        current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
         starting_value = 1
         if math.copysign(1, self.runs[square][self.opposite[direction]]) == base_board_value:
@@ -61,7 +61,7 @@ class Root_Node:
             else:
                 break
                 # we are at an enemy square, break
-            current_loc = next(path)
+            current_loc = path.next()
 
     # HELPER FUNCTIONS FOR BOARD INTERACTION
 	# if we are going to have these functions they should be memoized
@@ -89,11 +89,11 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     # optimized 1/2/16, faster than a for loop or a lambda function
     def valid_directions(self, a):
-        return [x for x in list(self.dmap.keys()) if self.is_valid(self.traverse_step(a, x))]
+        return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
                
     def display_board(self):
         for row in self.board:
-            stderr.write(str([x.zfill(2) for x in list(map(str, row))]) + '\n')
+            stderr.write(str(map(lambda x: x.zfill(2), map(str, row))) + '\n')
             stderr.flush()
     def make_move(self, column):
         for row in range(0, len(self.board)):
@@ -135,14 +135,14 @@ class Root_Node:
             if math.copysign(1, threat) == self.side_to_move:
                 return 9999 * self.side_to_move
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
-        score += len([x for x in self.threats if x > 0])
-        score -= len([x for x in self.threats if x < 0])
+        score += len(filter(lambda x: x > 0, self.threats))
+        score -= len(filter(lambda x: x < 0, self.threats))
 
         return score
     def export(self):
         child = Root_Node(False)
         child.board = [x[:] for x in self.board]
-        child.runs = {k:v[:] for k,v in list(self.runs.items())}
+        child.runs = {k:v[:] for k,v in self.runs.items()}
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
@@ -191,21 +191,28 @@ class Game:
             return [node.score(), ""]
         if node.side_to_move == 1:
             bestValue = [-10001, ""]
-        else:
-            bestValue = [10000, ""]
-        for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
-            current_child = node.export()
-            current_child.make_move(child)
-            search = self.minimax(current_child, depth - 1, alpha, beta)
-            search[1] = str(child) + search[1]
-            bestValue = self.pick_best(search, bestValue, node.side_to_move)[:]
-            if node.side_to_move == 1:
+            for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
+                current_child = node.export()
+                current_child.make_move(child)
+                search = self.minimax(current_child, depth - 1, alpha, beta)
+                search[1] = str(child) + search[1]
+                bestValue = self.pick_best(search, bestValue, node.side_to_move)[:]
                 alpha = self.pick_best(bestValue, alpha, node.side_to_move)[:]
-            else:
+                if beta[0] <= alpha[0]:
+                    self.history[(child, depth)] -= 1
+                    break
+        elif node.side_to_move == -1:
+            bestValue = [10001, ""]
+            for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
+                current_child = node.export()
+                current_child.make_move(child)
+                search = self.minimax(current_child, depth - 1, alpha, beta)
+                search[1] = str(child) + search[1]
+                bestValue = self.pick_best(search, bestValue, node.side_to_move)[:]
                 beta = self.pick_best(bestValue, beta, node.side_to_move)[:]
-            if beta[0] <= alpha[0]:
-                self.history[(child, depth)] -= 1
-                break
+                if beta[0] <= alpha[0]:
+                    self.history[(child, depth)] -= 1
+                    break
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
 
@@ -284,12 +291,12 @@ if __name__ == "__main__" :
         connectfour.settings['current_time'] = 6000
         start = time.time()
         connectfour.go()
-        print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
+        print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
         connectfour.root.display_board()
         connectfour.nodes = 0
-        connectfour.root.make_move(int(input()))
+        connectfour.root.make_move(int(raw_input()))
 def test_speed():
-    print("")
+    print ""
     for x in range(0, 3):
         foo = Root_Node()
         start = time.time()
@@ -302,7 +309,7 @@ def test_speed():
                 foo.export()
                 foo.make_move(random.choice(foo.legal_moves()))
                 foo.score()
-        print(counter)
+        print counter
         assert counter > 1000
 def test_threats_simple():
     foo = Root_Node()
@@ -322,8 +329,8 @@ def test_threats_simple():
 def test_traverse():
     foo = Root_Node()
     bar = foo.traverse((1, 2), 6)
-    assert next(bar) == (2, 3)
-    assert next(bar) == (3, 4)
+    assert bar.next() == (2, 3)
+    assert bar.next() == (3, 4)
 def test_square_validity():
     foo = Root_Node()
     assert not foo.is_valid((-1, 5))
