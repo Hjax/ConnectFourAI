@@ -1,6 +1,7 @@
 import math, random, time
 import copy
 from sys import stderr, stdin, stdout
+from profilehooks import profile
 
 # so notes on keeping track of important things
 
@@ -19,6 +20,9 @@ class Root_Node:
                 for column in range(0, 7):
                     self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
             self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
+
+        
+            
         # how many squares to add to a location to move a certain direction on the grid
         self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
         # the opposite of each direction, might be better to do + 4 % 7 or something
@@ -30,8 +34,9 @@ class Root_Node:
         # becomes true when there is a four in a row on the board
         self.won = False
 
+        self.next = [0 for x in range(0, 7)]
+
         self.threats = set() # set of int threats, sign determines side
-        self.pieces_played = 0
         self.side_to_move = 1
     def gethash(self):
         return str(self.board)
@@ -40,10 +45,7 @@ class Root_Node:
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
                 self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
-                    
     def update_direction(self, square, direction): 
-        if direction == 7: # we dont need to traverse downwards 
-            return
         path = self.traverse(square, direction)
         current_loc = next(path)
         base_board_value = self.board[square[0]][square[1]]
@@ -88,29 +90,30 @@ class Root_Node:
         elif abs(first_direction + opposite_direction) >= 3: # this is checked if A or not B, optimization?
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     # optimized 1/2/16, faster than a for loop or a lambda function
+    # does not return up, because we never search up
     def valid_directions(self, a):
-        return [x for x in list(self.dmap.keys()) if self.is_valid(self.traverse_step(a, x))]
+        return [x for x in list(self.dmap.keys()) if self.is_valid(self.traverse_step(a, x)) and x != 7]
                
     def display_board(self):
         for row in self.board:
             stderr.write(str([x.zfill(2) for x in list(map(str, row))]) + '\n')
             stderr.flush()
+    #@profile
     def make_move(self, column):
         for row in range(0, len(self.board)):
+            board_int = self.board_tuple_to_number( ((len(self.board) - 1) - row, column))
             if self.board[(len(self.board) - 1) - row][column] == 0:
                 self.board[(len(self.board) - 1) - row][column] = self.side_to_move
                 # remove the threat if its in our threat list
-                self.pieces_played += 1
-                if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
-                    self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
-                    if math.copysign(1, self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                if board_int in self.threats:
+                    self.threats.remove(board_int)
+                    if 1 == self.side_to_move:
                         self.won = True
-                if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
-                    self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
-                    if math.copysign(1, -1 * self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                if -1 * board_int in self.threats:
+                    self.threats.remove(-1 * board_int)
+                    if -1 == self.side_to_move:
                         self.won = True
                 for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
-                    
                     self.update_direction(( (len(self.board) - 1) - row, column), direction)
                 self.side_to_move *= -1
                 break
@@ -145,7 +148,7 @@ class Root_Node:
         child.runs = {k:v[:] for k,v in list(self.runs.items())}
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
-        child.pieces_played = self.pieces_played
+     #   child.next = self.next[:]
         return child
 
 class Game:
@@ -208,7 +211,6 @@ class Game:
                 break
         self.tt[node.gethash()] = bestValue[:]
         return bestValue
-
     def go(self):
         # clear the tt before starting a search also clear stats
         self.tt = {}
@@ -348,5 +350,4 @@ def test_node_export():
     assert bar.board != foo.board
     assert bar.runs != foo.runs
     assert bar.threats != foo.threats
-    assert bar.pieces_played != foo.pieces_played
     assert bar.side_to_move != foo.side_to_move
