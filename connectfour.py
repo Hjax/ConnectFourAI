@@ -1,7 +1,7 @@
 import math, random, time
 import copy
 from sys import stderr, stdin, stdout
-from profilehooks import profile
+#from profilehooks import profile
 
 # so notes on keeping track of important things
 
@@ -15,11 +15,13 @@ class Root_Node:
     def __init__(self, setup=True):
         self.board = []
         self.runs = {}
+        self.next = []
         if setup:
             for row in range(0, 6):
                 for column in range(0, 7):
                     self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
             self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
+            self.next = [0 for x in range(0, 7)]
 
         
             
@@ -34,7 +36,7 @@ class Root_Node:
         # becomes true when there is a four in a row on the board
         self.won = False
 
-        self.next = [0 for x in range(0, 7)]
+        
 
         self.threats = set() # set of int threats, sign determines side
         self.side_to_move = 1
@@ -100,23 +102,23 @@ class Root_Node:
             stderr.flush()
     #@profile
     def make_move(self, column):
-        for row in range(0, len(self.board)):
-            board_int = self.board_tuple_to_number( ((len(self.board) - 1) - row, column))
-            if self.board[(len(self.board) - 1) - row][column] == 0:
-                self.board[(len(self.board) - 1) - row][column] = self.side_to_move
-                # remove the threat if its in our threat list
-                if board_int in self.threats:
-                    self.threats.remove(board_int)
-                    if 1 == self.side_to_move:
-                        self.won = True
-                if -1 * board_int in self.threats:
-                    self.threats.remove(-1 * board_int)
-                    if -1 == self.side_to_move:
-                        self.won = True
-                for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
-                    self.update_direction(( (len(self.board) - 1) - row, column), direction)
-                self.side_to_move *= -1
-                break
+        row = self.next[column]
+        board_int = self.board_tuple_to_number( ((len(self.board) - 1) - row, column))
+        if self.board[(len(self.board) - 1) - row][column] == 0:
+            self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+            # remove the threat if its in our threat list
+            if board_int in self.threats:
+                self.threats.remove(board_int)
+                if 1 == self.side_to_move:
+                    self.won = True
+            if -1 * board_int in self.threats:
+                self.threats.remove(-1 * board_int)
+                if -1 == self.side_to_move:
+                    self.won = True
+            for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
+                self.update_direction(( (len(self.board) - 1) - row, column), direction)
+            self.side_to_move *= -1
+        self.next[column] += 1
         self.current_score = "nan"
     def legal_moves(self):
         return sorted([x for x in range(0, 7) if self.board[0][x] == 0], key=lambda k: abs(3 - k))
@@ -148,7 +150,7 @@ class Root_Node:
         child.runs = {k:v[:] for k,v in list(self.runs.items())}
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
-     #   child.next = self.next[:]
+        child.next = self.next[:]
         return child
 
 class Game:
@@ -160,7 +162,7 @@ class Game:
         self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
         self.history = {} # History uses negative values to avoid reversing the list
     def clear_history(self):
-        for depth in range(0, 7):
+        for depth in range(0, 20):
             for move in range(0, 7):
                 self.history[(move, depth)] = 0
     def set_setting(self, setting, value):
@@ -187,8 +189,12 @@ class Game:
         return best
     def minimax(self, node, depth, alpha, beta):
         self.nodes += 1
+        cutoff = -1
         if node.gethash() in self.tt:
-            return self.tt[node.gethash()]
+            if self.tt[node.gethash()][1] == depth:
+                return self.tt[node.gethash()][0]
+            else:
+                cutoff = self.tt[node.gethash()][2]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
             return [node.score(), ""]
@@ -196,7 +202,11 @@ class Game:
             bestValue = [-10001, ""]
         else:
             bestValue = [10000, ""]
-        for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
+        moveset = sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)])
+        if cutoff != -1:
+            moveset.remove(cutoff)
+            moveset = [cutoff] + moveset
+        for child in moveset:
             current_child = node.export()
             current_child.make_move(child)
             search = self.minimax(current_child, depth - 1, alpha, beta)
@@ -208,12 +218,13 @@ class Game:
                 beta = self.pick_best(bestValue, beta, node.side_to_move)[:]
             if beta[0] <= alpha[0]:
                 self.history[(child, depth)] -= 1
+                cutoff = child
                 break
-        self.tt[node.gethash()] = bestValue[:]
+        self.tt[node.gethash()] = (bestValue[:], depth, cutoff)
         return bestValue
     def go(self):
         # clear the tt before starting a search also clear stats
-        self.tt = {}
+        #self.tt = {}
         self.nodes = 0
         self.leaves = 0
         self.clear_history()
@@ -283,13 +294,14 @@ if __name__ == "__main1__" :
 if __name__ == "__main__" :
     connectfour = Game()
     while True:
+        connectfour.root.make_move(int(input()))
         connectfour.settings['current_time'] = 6000
         start = time.time()
         connectfour.go()
         print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
         connectfour.root.display_board()
         connectfour.nodes = 0
-        connectfour.root.make_move(int(input()))
+
 def test_speed():
     print("")
     for x in range(0, 3):
