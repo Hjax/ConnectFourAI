@@ -2,7 +2,6 @@ import math, random, time
 import copy
 from minimax import Search
 from sys import stderr, stdin, stdout
-#from profilehooks import profile
 
 # so notes on keeping track of important things
 
@@ -36,7 +35,10 @@ class Root_Node:
         self.pieces_played = 0
         self.side_to_move = 1
     def gethash(self):
-        return str(self.board)
+        result = ""
+        for i in self.board:
+            result = result + "".join(map(str, i))
+        return result
     
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
@@ -47,23 +49,25 @@ class Root_Node:
         if direction == 7: # we dont need to traverse downwards 
             return
         path = self.traverse(square, direction)
-        current_loc = next(path)
+        current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
-        starting_value = 1
+        starting_value = 0
         if math.copysign(1, self.runs[square][self.opposite[direction]]) == base_board_value:
-            starting_value = abs(self.runs[square][self.opposite[direction]]) + 1
+            starting_value = abs(self.runs[square][self.opposite[direction]])
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
+            starting_value += 1
             if current_board_value == 0:
+                # the following line might need to be just =
                 self.runs[current_loc][self.opposite[direction]] = starting_value * base_board_value
                 self.update_threats(current_loc, direction)
                 break # we break when we hit an enemy or blank block
             elif current_board_value == base_board_value:
-                starting_value += 1
+                pass
             else:
                 break
                 # we are at an enemy square, break
-            current_loc = next(path)
+            current_loc = path.next()
 
     # HELPER FUNCTIONS FOR BOARD INTERACTION
 	# if we are going to have these functions they should be memoized
@@ -78,7 +82,6 @@ class Root_Node:
         return (location[0] + self.dmap[direction][0], location[1] + self.dmap[direction][1])
     def is_valid(self, location):
         return location[0] >= 0 and location[0] < 6 and location[1] >= 0 and location[1] < 7
-    # optimized 1/2/16 abs does not slow it down significantly
     def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
         # this might not work properly because of the elifs, should it always check both directions?
         first_direction = self.runs[location][direction]
@@ -89,13 +92,12 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][self.opposite[direction]])]))
         elif abs(first_direction + opposite_direction) >= 3: # this is checked if A or not B, optimization?
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-    # optimized 1/2/16, faster than a for loop or a lambda function
     def valid_directions(self, a):
-        return [x for x in list(self.dmap.keys()) if self.is_valid(self.traverse_step(a, x))]
+        return [x for x in self.dmap.keys() if self.is_valid(self.traverse_step(a, x))]
                
     def display_board(self):
         for row in self.board:
-            stderr.write(str([x.zfill(2) for x in list(map(str, row))]) + '\n')
+            stderr.write(str(map(lambda x: x.zfill(2), map(str, row))) + '\n')
             stderr.flush()
     def make_move(self, column):
         for row in range(0, len(self.board)):
@@ -137,20 +139,49 @@ class Root_Node:
             if math.copysign(1, threat) == self.side_to_move:
                 return 9999 * self.side_to_move
         # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
-        score += len([x for x in self.threats if x > 0])
-        score -= len([x for x in self.threats if x < 0])
+        score += len(filter(lambda x: x > 0, self.threats))
+        score -= len(filter(lambda x: x < 0, self.threats))
 
+        taken = []
+        for threat in hanging_threats:
+            if abs(threat) not in taken:
+                taken.append(abs(threat))
+            if (abs(threat) + 7) not in taken:
+                taken.append(abs(threat) + 7)
+            clearer = self.traverse((int(threat / 7), int(threat % 7)), 3)
+            next_step = clearer.next()
+            while self.is_valid(next_step):
+                if self.board_tuple_to_number(next_step) not in taken:
+                    taken.append(self.board_tuple_to_number(next_step))
+                    next_step = clearer.next()
+                else:
+                    break
+        # you want it to be odd when its your turn to move, even otherwise
+        if self.side_to_move == 1:
+            if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
+                score += 500
+            elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
+                score -= 500
+        else:
+            if len(filter(lambda x: x > 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 0:
+                score += 500
+            elif len(filter(lambda x: x < 0, hanging_threats)) > 0 and (self.pieces_played - len(taken)) % 2 == 1:
+                score -= 500
         return score
     def export(self):
         child = Root_Node(False)
-        child.board = [x[:] for x in self.board]
-        child.runs = {k:v[:] for k,v in list(self.runs.items())}
+        child.board = []
+        for x in self.board:
+            child.board.append(x[:])
+        child.runs = {}
+        for i in self.runs.keys():
+            child.runs[i] = self.runs[i][:]
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
         return child
 
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
         read_line = stdin.readline()
@@ -175,20 +206,18 @@ if __name__ == "__main_1_" :
             connectfour.go()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
-
         connectfour.settings['current_time'] = 6000
         start = time.time()
         connectfour.go()
-        print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
+        print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
         connectfour.root.display_board()
         connectfour.nodes = 0
-        connectfour.root.make_move(int(input()))
-
+        connectfour.root.make_move(int(raw_input()))
 def test_speed():
-    print("")
+    print ""
     for x in range(0, 3):
         foo = Root_Node()
         start = time.time()
@@ -201,7 +230,7 @@ def test_speed():
                 foo.export()
                 foo.make_move(random.choice(foo.legal_moves()))
                 foo.score()
-        print(counter)
+        print counter
         assert counter > 1000
 def test_threats_simple():
     foo = Root_Node()
@@ -221,8 +250,8 @@ def test_threats_simple():
 def test_traverse():
     foo = Root_Node()
     bar = foo.traverse((1, 2), 6)
-    assert next(bar) == (2, 3)
-    assert next(bar) == (3, 4)
+    assert bar.next() == (2, 3)
+    assert bar.next() == (3, 4)
 def test_square_validity():
     foo = Root_Node()
     assert not foo.is_valid((-1, 5))
@@ -247,4 +276,5 @@ def test_node_export():
     assert bar.board != foo.board
     assert bar.runs != foo.runs
     assert bar.threats != foo.threats
+    assert bar.pieces_played != foo.pieces_played
     assert bar.side_to_move != foo.side_to_move

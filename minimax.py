@@ -79,8 +79,6 @@ class Search:
             best = self.minimax(self.root, depth, [-9999999, ""], [9999999, ""])
             stderr.write("[INFO] depth %s score %s \n" % (str(depth), str(best[0])))
             stderr.flush()
-        stderr.write(str(best))
-        self.root.make_move(int(best[1][0]))
         stdout.write("place_disc %s \n" % (best[1][0]))
         stdout.flush()
         return best[1][0]
