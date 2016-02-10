@@ -1,6 +1,10 @@
 from sys import stderr, stdin, stdout
+import time, random
 class Search:
     def __init__(self, root):
+
+        self.start_time = 0
+        
         self.settings = {}
         self.nodes = 0
         self.leaves = 0
@@ -18,8 +22,8 @@ class Search:
         current_time = int(self.settings["current_time"])
         increment = int(self.settings["time_per_move"])
         current_round = int(self.settings["round"])
-        thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
-        return min(max(thinking_time, increment), current_time)
+        thinking_time = (current_time + increment * (42.0 - current_round)) / (43.0 - current_round)
+        return min(max(thinking_time * 2, increment), current_time) / 1000
     def pick_best(self, candidate, _best, side_to_move):
         best = _best
         if (candidate[0] > best[0] and side_to_move == 1) or (candidate[0] < best[0] and side_to_move == -1):
@@ -36,6 +40,10 @@ class Search:
     def minimax(self, node, depth, alpha, beta):
         self.nodes += 1
         cutoff = -1
+
+        if self.current_move_time() - (time.time() - self.start_time) < 0.05:
+            raise RuntimeError("Out of time!")
+        
         if node.gethash() in self.tt:
             if self.tt[node.gethash()][1] == depth:
                 return self.tt[node.gethash()][0]
@@ -71,14 +79,22 @@ class Search:
     def go(self):
         # clear the tt before starting a search also clear stats
         #self.tt = {}
+        self.start_time = time.time()
         self.nodes = 0
         self.leaves = 0
         self.clear_history()
-        best = None
-        for depth in range(0, 8):
-            best = self.minimax(self.root, depth, [-9999999, ""], [9999999, ""])
-            stderr.write("[INFO] depth %s score %s \n" % (str(depth), str(best[0])))
-            stderr.flush()
+        best = [0, str(random.choice(self.root.legal_moves()))]
+
+        depth = 0
+        while True:
+            try:
+                best = self.minimax(self.root, depth, [-9999999, ""], [9999999, ""])
+                stderr.write("[INFO] depth %s score %s \n" % (str(depth), str(best[0])))
+                stderr.flush()
+                depth += 1
+            except:
+                break
         stdout.write("place_disc %s \n" % (best[1][0]))
+        self.root.make_move(int(best[1][0]))
         stdout.flush()
         return best[1][0]

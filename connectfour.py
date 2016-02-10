@@ -210,6 +210,9 @@ if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.settings['current_time'] = 6000
+        connectfour.settings['timebank'] = 10000
+        connectfour.settings['time_per_move'] = 500
+        connectfour.settings['round'] = 1   
         start = time.time()
         connectfour.go()
         print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
