@@ -1,5 +1,6 @@
 import math, random, time
 import copy
+from minimax import Search
 from sys import stderr, stdin, stdout
 #from profilehooks import profile
 
@@ -15,16 +16,11 @@ class Root_Node:
     def __init__(self, setup=True):
         self.board = []
         self.runs = {}
-        self.next = []
         if setup:
             for row in range(0, 6):
                 for column in range(0, 7):
                     self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
             self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
-            self.next = [0 for x in range(0, 7)]
-
-        
-            
         # how many squares to add to a location to move a certain direction on the grid
         self.dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
         # the opposite of each direction, might be better to do + 4 % 7 or something
@@ -36,9 +32,8 @@ class Root_Node:
         # becomes true when there is a four in a row on the board
         self.won = False
 
-        
-
         self.threats = set() # set of int threats, sign determines side
+        self.pieces_played = 0
         self.side_to_move = 1
     def gethash(self):
         return str(self.board)
@@ -47,7 +42,10 @@ class Root_Node:
         for i in range(0, 42):
             if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
                 self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
+                    
     def update_direction(self, square, direction): 
+        if direction == 7: # we dont need to traverse downwards 
+            return
         path = self.traverse(square, direction)
         current_loc = next(path)
         base_board_value = self.board[square[0]][square[1]]
@@ -92,33 +90,32 @@ class Root_Node:
         elif abs(first_direction + opposite_direction) >= 3: # this is checked if A or not B, optimization?
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     # optimized 1/2/16, faster than a for loop or a lambda function
-    # does not return up, because we never search up
     def valid_directions(self, a):
-        return [x for x in list(self.dmap.keys()) if self.is_valid(self.traverse_step(a, x)) and x != 7]
+        return [x for x in list(self.dmap.keys()) if self.is_valid(self.traverse_step(a, x))]
                
     def display_board(self):
         for row in self.board:
             stderr.write(str([x.zfill(2) for x in list(map(str, row))]) + '\n')
             stderr.flush()
-    #@profile
     def make_move(self, column):
-        row = self.next[column]
-        board_int = self.board_tuple_to_number( ((len(self.board) - 1) - row, column))
-        if self.board[(len(self.board) - 1) - row][column] == 0:
-            self.board[(len(self.board) - 1) - row][column] = self.side_to_move
-            # remove the threat if its in our threat list
-            if board_int in self.threats:
-                self.threats.remove(board_int)
-                if 1 == self.side_to_move:
-                    self.won = True
-            if -1 * board_int in self.threats:
-                self.threats.remove(-1 * board_int)
-                if -1 == self.side_to_move:
-                    self.won = True
-            for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
-                self.update_direction(( (len(self.board) - 1) - row, column), direction)
-            self.side_to_move *= -1
-        self.next[column] += 1
+        for row in range(0, len(self.board)):
+            if self.board[(len(self.board) - 1) - row][column] == 0:
+                self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+                # remove the threat if its in our threat list
+                self.pieces_played += 1
+                if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
+                    self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+                    if math.copysign(1, self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                        self.won = True
+                if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
+                    self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+                    if math.copysign(1, -1 * self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                        self.won = True
+                for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
+                    
+                    self.update_direction(( (len(self.board) - 1) - row, column), direction)
+                self.side_to_move *= -1
+                break
         self.current_score = "nan"
     def legal_moves(self):
         return sorted([x for x in range(0, 7) if self.board[0][x] == 0], key=lambda k: abs(3 - k))
@@ -150,124 +147,11 @@ class Root_Node:
         child.runs = {k:v[:] for k,v in list(self.runs.items())}
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
-        child.next = self.next[:]
+        child.pieces_played = self.pieces_played
         return child
 
-class Game:
-    def __init__(self):
-        self.settings = {}
-        self.nodes = 0
-        self.leaves = 0
-        self.root = Root_Node()
-        self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
-        self.history = {} # History uses negative values to avoid reversing the list
-    def clear_history(self):
-        for depth in range(0, 20):
-            for move in range(0, 7):
-                self.history[(move, depth)] = 0
-    def set_setting(self, setting, value):
-        self.settings[setting] = value
-    def current_move_time(self): # returns the amount of time we are going to think for this move
-        max_time = int(self.settings["timebank"])
-        current_time = int(self.settings["current_time"])
-        increment = int(self.settings["time_per_move"])
-        current_round = int(self.settings["round"])
-        thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
-        return min(max(thinking_time, increment), current_time)
-    def pick_best(self, candidate, _best, side_to_move):
-        best = _best
-        if (candidate[0] > best[0] and side_to_move == 1) or (candidate[0] < best[0] and side_to_move == -1):
-            return candidate
-        elif candidate[0] == best[0]:
-            # if the score is good for the side to move, end the game sooner
-            if (candidate[0] >= 0 and side_to_move == 1) or (candidate[0] <= 0 and side_to_move == -1):
-                if len(candidate[1]) < len(best[1]):
-                    return candidate
-            else:
-                if len(candidate[1]) > len(best[1]):
-                    return candidate
-        return best
-    def minimax(self, node, depth, alpha, beta):
-        self.nodes += 1
-        cutoff = -1
-        if node.gethash() in self.tt:
-            if self.tt[node.gethash()][1] == depth:
-                return self.tt[node.gethash()][0]
-            else:
-                cutoff = self.tt[node.gethash()][2]
-        if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
-            self.leaves += 1
-            return [node.score(), ""]
-        if node.side_to_move == 1:
-            bestValue = [-10001, ""]
-        else:
-            bestValue = [10000, ""]
-        moveset = sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)])
-        if cutoff != -1:
-            moveset.remove(cutoff)
-            moveset = [cutoff] + moveset
-        for child in moveset:
-            current_child = node.export()
-            current_child.make_move(child)
-            search = self.minimax(current_child, depth - 1, alpha, beta)
-            search[1] = str(child) + search[1]
-            bestValue = self.pick_best(search, bestValue, node.side_to_move)[:]
-            if node.side_to_move == 1:
-                alpha = self.pick_best(bestValue, alpha, node.side_to_move)[:]
-            else:
-                beta = self.pick_best(bestValue, beta, node.side_to_move)[:]
-            if beta[0] <= alpha[0]:
-                self.history[(child, depth)] -= 1
-                cutoff = child
-                break
-        self.tt[node.gethash()] = (bestValue[:], depth, cutoff)
-        return bestValue
-    def go(self):
-        # clear the tt before starting a search also clear stats
-        #self.tt = {}
-        self.nodes = 0
-        self.leaves = 0
-        self.clear_history()
-        if int(self.settings["current_time"]) < 600:
-            depth = 3
-        elif int(self.settings["current_time"]) < 2000:
-            depth = 4
-        elif int(self.settings["current_time"]) < 4500:
-            depth = 5
-        else:
-            depth = 6
-        stderr.write("We are searching with depth %s \n" % (str(depth + 1)))
-        stderr.flush()
-        scores = {}
-        for child in self.root.legal_moves():
-            current_child = self.root.export()
-            current_child.make_move(child)
-            scores[child] = self.minimax(current_child, depth, [-9999999, ""], [9999999, ""])
-        if self.root.side_to_move == 1:
-            best = [-999999, ""]
-        else:
-            best = [999999, ""]
-        for child in self.root.legal_moves():
-            scores[child][1] = str(child) + scores[child][1]
-            if (scores[child][0] > best[0] and self.root.side_to_move == 1) or (scores[child][0] < best[0] and self.root.side_to_move == -1):
-                best = scores[child]
-            elif scores[child][0] == best[0]:
-                # if the score is good for the side to move, end the game sooner
-                if (scores[child][0] >= 0 and self.root.side_to_move == 1) or (scores[child][0] <= 0 and self.root.side_to_move == -1):
-                    if len(scores[child][1]) < len(best[1]):
-                        best = scores[child]
-                else:
-                    if len(scores[child][1]) > len(best[1]):
-                        best = scores[child]
-        stderr.write(str(scores) + '\n')
-        stderr.flush()
-        self.root.make_move(int(best[1][0]))
-        stdout.write("place_disc %s \n" % (best[1][0]))
-        stdout.flush()
-        return best[1][0]
-
-if __name__ == "__main1__" :
-    connectfour = Game()
+if __name__ == "__main_1_" :
+    connectfour = Search(Root_Node())
     while True:
         read_line = stdin.readline()
         if len(read_line) == 0:
@@ -292,15 +176,16 @@ if __name__ == "__main1__" :
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
 if __name__ == "__main__" :
-    connectfour = Game()
+    connectfour = Search(Root_Node())
     while True:
-        connectfour.root.make_move(int(input()))
+
         connectfour.settings['current_time'] = 6000
         start = time.time()
         connectfour.go()
         print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
         connectfour.root.display_board()
         connectfour.nodes = 0
+        connectfour.root.make_move(int(input()))
 
 def test_speed():
     print("")
