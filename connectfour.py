@@ -225,7 +225,7 @@ def test_speed():
         foo = Root_Node()
         start = time.time()
         counter = 0
-        while time.time() - start < 1:
+        while time.time() - start < 2:
             counter += 1
             if len(foo.legal_moves()) == 0 or foo.won:
                 foo = Root_Node()
