@@ -221,7 +221,7 @@ if __name__ == "__main_1_" :
         connectfour.root.make_move(int(raw_input()))
 def test_speed():
     print ""
-    for x in range(0, 3):
+    for x in range(0, 10):
         foo = Root_Node()
         start = time.time()
         counter = 0
