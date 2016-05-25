@@ -35,10 +35,7 @@ class Root_Node:
         self.pieces_played = 0
         self.side_to_move = 1
     def gethash(self):
-        result = ""
-        for i in self.board:
-            result = result + "".join(map(str, i))
-        return result
+        return str(self.board)
     
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
@@ -51,19 +48,17 @@ class Root_Node:
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
-        starting_value = 0
+        starting_value = 1
         if math.copysign(1, self.runs[square][self.opposite[direction]]) == base_board_value:
-            starting_value = abs(self.runs[square][self.opposite[direction]])
+            starting_value = abs(self.runs[square][self.opposite[direction]]) + 1
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
-            starting_value += 1
             if current_board_value == 0:
-                # the following line might need to be just =
                 self.runs[current_loc][self.opposite[direction]] = starting_value * base_board_value
                 self.update_threats(current_loc, direction)
                 break # we break when we hit an enemy or blank block
             elif current_board_value == base_board_value:
-                pass
+                starting_value += 1
             else:
                 break
                 # we are at an enemy square, break
@@ -170,18 +165,14 @@ class Root_Node:
         return score
     def export(self):
         child = Root_Node(False)
-        child.board = []
-        for x in self.board:
-            child.board.append(x[:])
-        child.runs = {}
-        for i in self.runs.keys():
-            child.runs[i] = self.runs[i][:]
+        child.board = [x[:] for x in self.board]
+        child.runs = {k:v[:] for k,v in self.runs.items()}
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
         return child
 
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
         read_line = stdin.readline()
@@ -203,13 +194,14 @@ if __name__ == "__main__" :
         if processed[0] == "action":
             start = time.time()
             connectfour.set_setting("current_time", processed[2])
-            connectfour.go()
+            stdout.write("place_disc %s \n" % (connectfour.go()))
+            stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
-        connectfour.settings['current_time'] = 6000
+        connectfour.settings['current_time'] = 10000
         connectfour.settings['timebank'] = 10000
         connectfour.settings['time_per_move'] = 500
         connectfour.settings['round'] = 1   
@@ -219,9 +211,10 @@ if __name__ == "__main_1_" :
         connectfour.root.display_board()
         connectfour.nodes = 0
         connectfour.root.make_move(int(raw_input()))
-def test_speed():
+def test_speed_simple():
     print ""
-    for x in range(0, 10):
+    return
+    for x in range(0, 3):
         foo = Root_Node()
         start = time.time()
         counter = 0
@@ -235,6 +228,16 @@ def test_speed():
                 foo.score()
         print counter
         assert counter > 1000
+def test_minimax():
+    connectfour = Search(Root_Node())
+    connectfour.settings['current_time'] = 6000
+    connectfour.settings['timebank'] = 10000
+    connectfour.settings['time_per_move'] = 500
+    connectfour.settings['round'] = 1   
+    for i in range(0, 5):
+        start = time.time()
+        connectfour.go()
+        print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
 def test_threats_simple():
     foo = Root_Node()
     foo.make_move(0)
