@@ -198,6 +198,7 @@ class Game:
                 break
         self.tt[node.gethash()] = bestValue
         return bestValue
+    
     def go(self):
         # clear the tt before starting a search also clear stats
         self.tt = {}
@@ -206,18 +207,16 @@ class Game:
         self.clear_history()
 
         self.minimax(self.root, 8, -9999999, 9999999)
-        
-        best = (-99999999, None)
+        best = (self.root.side_to_move * -99999999, None)
         for move in self.root.legal_moves():
             new = self.root.export()
             new.make_move(move)
-            if self.tt[new.gethash()] > best[0]:
+            if (self.root.side_to_move == 1 and self.tt[new.gethash()] > best[0]) or (self.root.side_to_move == -1 and self.tt[new.gethash()] < best[0]):
                 best = [self.tt[new.gethash()], move]
-
         self.root.make_move(best[1])
         return best[1]
 
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -239,20 +238,21 @@ if __name__ == "__main_1_" :
         if processed[0] == "action":
             start = time.time()
             connectfour.set_setting("current_time", processed[2])
-            stdout.write("place disc %s" % (connectfour.go()))
+            stdout.write("place_disc %s\n" % (connectfour.go()))
             stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         connectfour.settings['current_time'] = 6000
-        start = time.time()
-        connectfour.go()
-        print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
         connectfour.root.display_board()
         connectfour.nodes = 0
         connectfour.root.make_move(int(input()))
+        start = time.time()
+        connectfour.go()
+        print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
+
 def test_speed():
     print("")
     for x in range(0, 3):
