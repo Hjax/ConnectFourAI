@@ -159,7 +159,7 @@ class Game:
         self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
         self.history = {} # History uses negative values to avoid reversing the list
     def clear_history(self):
-        for depth in range(0, 13):
+        for depth in range(0, 11):
             for move in range(0, 7):
                 self.history[(move, depth)] = 0
     def set_setting(self, setting, value):
@@ -177,19 +177,21 @@ class Game:
             return self.tt[node.gethash()]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
+            self.tt[node.gethash()] = node.score()
             return node.score()
         if node.side_to_move == 1:
-            bestValue = 10001
+            bestValue = -10001
         else:
             bestValue = 10001
         for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
             current_child = node.export()
             current_child.make_move(child)
             search = self.minimax(current_child, depth - 1, alpha, beta)
-            bestValue = max(search, bestValue)
             if node.side_to_move == 1:
+                bestValue = max(search, bestValue)
                 alpha = max(bestValue, alpha)
             else:
+                bestValue = min(search, bestValue)
                 beta = min(bestValue, beta)
             if beta <= alpha:
                 self.history[(child, depth)] -= 1
@@ -203,8 +205,7 @@ class Game:
         self.leaves = 0
         self.clear_history()
 
-        self.minimax(self.root, 12, -9999999, 9999999)
-
+        self.minimax(self.root, 8, -9999999, 9999999)
         
         best = (-99999999, None)
         for move in self.root.legal_moves():
@@ -212,6 +213,7 @@ class Game:
             new.make_move(move)
             if self.tt[new.gethash()] > best[0]:
                 best = [self.tt[new.gethash()], move]
+
         self.root.make_move(best[1])
         return best[1]
 
@@ -237,7 +239,8 @@ if __name__ == "__main_1_" :
         if processed[0] == "action":
             start = time.time()
             connectfour.set_setting("current_time", processed[2])
-            connectfour.go()
+            stdout.write("place disc %s" % (connectfour.go()))
+            stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
 if __name__ == "__main__" :
