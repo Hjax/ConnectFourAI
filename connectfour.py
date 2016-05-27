@@ -153,31 +153,36 @@ class Root_Node:
 class Game:
     def __init__(self):
         self.settings = {}
+        self.start_time = 0
         self.nodes = 0
         self.leaves = 0
         self.root = Root_Node()
         self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
         self.history = {} # History uses negative values to avoid reversing the list
     def clear_history(self):
-        for depth in range(0, 11):
+        for depth in range(0, 42):
             for move in range(0, 7):
                 self.history[(move, depth)] = 0
     def set_setting(self, setting, value):
         self.settings[setting] = value
     def current_move_time(self): # returns the amount of time we are going to think for this move
-        max_time = int(self.settings["timebank"])
         current_time = int(self.settings["current_time"])
         increment = int(self.settings["time_per_move"])
         current_round = int(self.settings["round"])
-        thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
-        return min(max(thinking_time, increment), current_time)
+        if current_round == 42:
+            return current_time
+        return ((current_time + increment * (42 - current_round)) / (42 - current_round)) / 1000
     def minimax(self, node, depth, alpha, beta):
+
+        if time.clock() - self.start_time > self.current_move_time():
+            raise RuntimeError("Out of time")
+        
         self.nodes += 1
-        if node.gethash() in self.tt:
-            return self.tt[node.gethash()]
+        if node.gethash() in self.tt and self.tt[node.gethash()][1] == depth:
+            return self.tt[node.gethash()][0]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
-            self.tt[node.gethash()] = node.score()
+            self.tt[node.gethash()] = (node.score(), depth)
             return node.score()
         if node.side_to_move == 1:
             bestValue = -10001
@@ -196,7 +201,7 @@ class Game:
             if beta <= alpha:
                 self.history[(child, depth)] -= 1
                 break
-        self.tt[node.gethash()] = bestValue
+        self.tt[node.gethash()] = (bestValue, depth)
         return bestValue
     
     def go(self):
@@ -206,17 +211,27 @@ class Game:
         self.leaves = 0
         self.clear_history()
 
-        self.minimax(self.root, 8, -9999999, 9999999)
+        print self.current_move_time()
+        self.start_time = time.clock()
+        for depth in range(1, 42):
+            print "[INFO] Depth: %s Nodes: %s" % (depth, self.nodes)
+            try:
+                self.minimax(self.root, depth, -9999999, 9999999)
+            except:
+                print("hit depth limit on iteration %s" % (str(depth)))
+                break
+            
+            
         best = (self.root.side_to_move * -99999999, None)
         for move in self.root.legal_moves():
             new = self.root.export()
             new.make_move(move)
-            if (self.root.side_to_move == 1 and self.tt[new.gethash()] > best[0]) or (self.root.side_to_move == -1 and self.tt[new.gethash()] < best[0]):
-                best = [self.tt[new.gethash()], move]
+            if (self.root.side_to_move == 1 and self.tt[new.gethash()][0] > best[0]) or (self.root.side_to_move == -1 and self.tt[new.gethash()][0] < best[0]):
+                best = [self.tt[new.gethash()][0], move]
         self.root.make_move(best[1])
         return best[1]
 
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
@@ -242,10 +257,12 @@ if __name__ == "__main__" :
             stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
+        connectfour.settings["time_per_move"] = 500
         connectfour.settings['current_time'] = 6000
+        connectfour.settings['round'] = 35
         connectfour.root.display_board()
         connectfour.nodes = 0
         connectfour.root.make_move(int(input()))
