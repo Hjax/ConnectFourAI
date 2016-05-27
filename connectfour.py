@@ -1,7 +1,6 @@
 import math, random, time
 import copy
 from sys import stderr, stdin, stdout
-from profilehooks import profile
 
 # so notes on keeping track of important things
 
@@ -160,7 +159,7 @@ class Game:
         self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
         self.history = {} # History uses negative values to avoid reversing the list
     def clear_history(self):
-        for depth in range(0, 7):
+        for depth in range(0, 13):
             for move in range(0, 7):
                 self.history[(move, depth)] = 0
     def set_setting(self, setting, value):
@@ -172,44 +171,30 @@ class Game:
         current_round = int(self.settings["round"])
         thinking_time = (current_time + increment * (42 - current_round)) / (43 - current_round)
         return min(max(thinking_time, increment), current_time)
-    def pick_best(self, candidate, _best, side_to_move):
-        best = _best
-        if (candidate[0] > best[0] and side_to_move == 1) or (candidate[0] < best[0] and side_to_move == -1):
-            return candidate
-        elif candidate[0] == best[0]:
-            # if the score is good for the side to move, end the game sooner
-            if (candidate[0] >= 0 and side_to_move == 1) or (candidate[0] <= 0 and side_to_move == -1):
-                if len(candidate[1]) < len(best[1]):
-                    return candidate
-            else:
-                if len(candidate[1]) > len(best[1]):
-                    return candidate
-        return best
     def minimax(self, node, depth, alpha, beta):
         self.nodes += 1
         if node.gethash() in self.tt:
             return self.tt[node.gethash()]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
-            return [node.score(), ""]
+            return node.score()
         if node.side_to_move == 1:
-            bestValue = [-10001, ""]
+            bestValue = 10001
         else:
-            bestValue = [10000, ""]
+            bestValue = 10001
         for child in sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)]):
             current_child = node.export()
             current_child.make_move(child)
             search = self.minimax(current_child, depth - 1, alpha, beta)
-            search[1] = str(child) + search[1]
-            bestValue = self.pick_best(search, bestValue, node.side_to_move)[:]
+            bestValue = max(search, bestValue)
             if node.side_to_move == 1:
-                alpha = self.pick_best(bestValue, alpha, node.side_to_move)[:]
+                alpha = max(bestValue, alpha)
             else:
-                beta = self.pick_best(bestValue, beta, node.side_to_move)[:]
-            if beta[0] <= alpha[0]:
+                beta = min(bestValue, beta)
+            if beta <= alpha:
                 self.history[(child, depth)] -= 1
                 break
-        self.tt[node.gethash()] = bestValue[:]
+        self.tt[node.gethash()] = bestValue
         return bestValue
     def go(self):
         # clear the tt before starting a search also clear stats
@@ -217,45 +202,20 @@ class Game:
         self.nodes = 0
         self.leaves = 0
         self.clear_history()
-        if int(self.settings["current_time"]) < 600:
-            depth = 3
-        elif int(self.settings["current_time"]) < 2000:
-            depth = 4
-        elif int(self.settings["current_time"]) < 4500:
-            depth = 5
-        else:
-            depth = 6
-        stderr.write("We are searching with depth %s \n" % (str(depth + 1)))
-        stderr.flush()
-        scores = {}
-        for child in self.root.legal_moves():
-            current_child = self.root.export()
-            current_child.make_move(child)
-            scores[child] = self.minimax(current_child, depth, [-9999999, ""], [9999999, ""])
-        if self.root.side_to_move == 1:
-            best = [-999999, ""]
-        else:
-            best = [999999, ""]
-        for child in self.root.legal_moves():
-            scores[child][1] = str(child) + scores[child][1]
-            if (scores[child][0] > best[0] and self.root.side_to_move == 1) or (scores[child][0] < best[0] and self.root.side_to_move == -1):
-                best = scores[child]
-            elif scores[child][0] == best[0]:
-                # if the score is good for the side to move, end the game sooner
-                if (scores[child][0] >= 0 and self.root.side_to_move == 1) or (scores[child][0] <= 0 and self.root.side_to_move == -1):
-                    if len(scores[child][1]) < len(best[1]):
-                        best = scores[child]
-                else:
-                    if len(scores[child][1]) > len(best[1]):
-                        best = scores[child]
-        stderr.write(str(scores) + '\n')
-        stderr.flush()
-        self.root.make_move(int(best[1][0]))
-        stdout.write("place_disc %s \n" % (best[1][0]))
-        stdout.flush()
-        return best[1][0]
 
-if __name__ == "__main1__" :
+        self.minimax(self.root, 12, -9999999, 9999999)
+
+        
+        best = (-99999999, None)
+        for move in self.root.legal_moves():
+            new = self.root.export()
+            new.make_move(move)
+            if self.tt[new.gethash()] > best[0]:
+                best = [self.tt[new.gethash()], move]
+        self.root.make_move(best[1])
+        return best[1]
+
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         read_line = stdin.readline()
