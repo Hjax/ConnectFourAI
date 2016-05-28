@@ -171,19 +171,21 @@ class Game:
         current_round = int(self.settings["round"])
         if current_round == 42:
             return current_time
-        return ((current_time + increment * (42 - current_round)) / (42 - current_round)) / 1000.0
+        return min(current_time / 1000.0, 1.4 * ((current_time + increment * (42 - current_round)) / (42 - current_round)) / 1000.0) - .05
     def minimax(self, node, depth, alpha, beta):
 
         if time.clock() - self.start_time > self.current_move_time():
             raise RuntimeError("Out of time")
-        
+
         self.nodes += 1
-        if node.gethash() in self.tt and self.tt[node.gethash()][1] == depth:
-            return self.tt[node.gethash()][0]
+        if node.gethash() in self.tt:
+            if self.tt[node.gethash()][1] == depth:
+                return self.tt[node.gethash()][0]
         if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
-            self.tt[node.gethash()] = (node.score(), depth)
-            return node.score()
+            score = node.score() + (node.side_to_move * depth)
+            self.tt[node.gethash()] = (score, depth)
+            return score
         if node.side_to_move == 1:
             bestValue = -10001
         else:
@@ -236,7 +238,7 @@ class Game:
         self.root.make_move(best[1])
         return best[1]
 
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     # to prevent a test crash
     connectfour.settings['round'] = 1
@@ -264,7 +266,7 @@ if __name__ == "__main__" :
             stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Game()
     while True:
         connectfour.settings["time_per_move"] = 500
