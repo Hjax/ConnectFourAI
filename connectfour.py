@@ -171,7 +171,7 @@ class Game:
         current_round = int(self.settings["round"])
         if current_round == 42:
             return current_time
-        return ((current_time + increment * (42 - current_round)) / (42 - current_round)) / 1000
+        return ((current_time + increment * (42 - current_round)) / (42 - current_round)) / 1000.0
     def minimax(self, node, depth, alpha, beta):
 
         if time.clock() - self.start_time > self.current_move_time():
@@ -211,28 +211,35 @@ class Game:
         self.leaves = 0
         self.clear_history()
 
-        print self.current_move_time()
+        stderr.write("we have %s seconds for the current move\n" % (self.current_move_time()))
         self.start_time = time.clock()
         for depth in range(1, 42):
-            print "[INFO] Depth: %s Nodes: %s" % (depth, self.nodes)
+            stderr.write("[INFO] Depth: %s Nodes: %s\n" % (depth, self.nodes))
+            stderr.flush()
             try:
                 self.minimax(self.root, depth, -9999999, 9999999)
             except:
-                print("hit depth limit on iteration %s" % (str(depth)))
+                stderr.write("hit time limit on iteration %s\n" % (str(depth)))
+                stderr.flush()
                 break
             
-            
         best = (self.root.side_to_move * -99999999, None)
+        scores = {}
         for move in self.root.legal_moves():
             new = self.root.export()
             new.make_move(move)
+            scores[move] = self.tt[new.gethash()][0]
             if (self.root.side_to_move == 1 and self.tt[new.gethash()][0] > best[0]) or (self.root.side_to_move == -1 and self.tt[new.gethash()][0] < best[0]):
                 best = [self.tt[new.gethash()][0], move]
+        stderr.write(str(scores) + "\n")
+        stderr.flush()
         self.root.make_move(best[1])
         return best[1]
 
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Game()
+    # to prevent a test crash
+    connectfour.settings['round'] = 1
     while True:
         read_line = stdin.readline()
         if len(read_line) == 0:
@@ -257,7 +264,7 @@ if __name__ == "__main_1_" :
             stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Game()
     while True:
         connectfour.settings["time_per_move"] = 500
