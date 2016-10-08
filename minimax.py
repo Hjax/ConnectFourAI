@@ -82,22 +82,28 @@ class Search:
         self.leaves = 0
         self.clear_history()
 
+        bestMove = None
         depth = 0
         while True:
             try:
                 depth += 1
                 score = self.minimax(self.root, depth, -9999999, 9999999)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
+                bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
             except:
                 break
         PV = ""
         current = self.root.export()
         for i in range(0, 6):
-            move = self.tt[current.gethash()][2]
-            PV = PV + str(move) + ","
-            current.make_move(move)
+            try:
+                move = self.tt[current.gethash()][2]
+                PV = PV + str(move) + ","
+                current.make_move(move)
+            except:
+                PV = PV + "mate"
+                break
         stderr.write(PV + "\n")
         stderr.flush()
-        self.root.make_move(self.tt[self.root.gethash()][2])
-        return self.tt[self.root.gethash()][2]
+        self.root.make_move(bestMove)
+        return bestMove
