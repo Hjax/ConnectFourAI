@@ -76,6 +76,25 @@ class Search:
                 break
         self.tt[node.gethash()] = (bestValue, depth, best)
         return bestValue
+
+    def mtdf(self, root, depth, estimate):
+
+        g = estimate
+        
+        upper =  9999999
+        lower = -9999999
+        while lower < upper:
+            if g == lower:
+                beta = g + 1
+            else:
+                beta = g
+            g = self.minimax(root, depth, beta - 1, beta,)
+            if g < beta:
+                upper = g
+            else:
+                lower = g
+        return g
+                
     
     def go(self):
         # clear the tt before starting a search also clear stats
@@ -88,11 +107,14 @@ class Search:
         stderr.write("Thinking time: " + str(self.current_move_time()) + "\n")
 
         bestMove = None
+
+        score = 0
+        
         depth = 0
         while True:
             try:
                 depth += 1
-                score = self.minimax(self.root, depth, -9999999, 9999999)
+                score = self.mtdf(self.root, depth, score)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
