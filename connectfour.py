@@ -172,8 +172,12 @@ class Root_Node:
         child.pieces_played = self.pieces_played
         return child
 
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
+    connectfour.settings['current_time'] = 10000
+    connectfour.settings['timebank'] = 10000
+    connectfour.settings['time_per_move'] = 500
+    connectfour.settings['round'] = 1   
     while True:
         read_line = stdin.readline()
         if len(read_line) == 0:
@@ -198,7 +202,7 @@ if __name__ == "__main_1_" :
             stdout.flush()
             stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
             stderr.flush()
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.settings['current_time'] = 10000

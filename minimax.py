@@ -1,5 +1,8 @@
 from sys import stderr, stdin, stdout
 import time, random
+
+ROUND_TARGET = 25.0
+
 class Search:
     def __init__(self, root):
 
@@ -22,10 +25,10 @@ class Search:
         current_time = int(self.settings["current_time"])
         increment = int(self.settings["time_per_move"])
         current_round = int(self.settings["round"])
-        if current_round == 42:
-            return current_time
-        thinking_time = (current_time + increment * (42.0 - current_round)) / (42.0 - current_round)
-        return thinking_time / 1000
+        if current_round >= ROUND_TARGET:
+            return current_time / 1000.0
+        thinking_time = (current_time + increment * (ROUND_TARGET - current_round)) / (ROUND_TARGET - current_round)
+        return min(thinking_time, current_time) / 1000.0
     def pick_best(self, candidate, best, side_to_move):
         if (candidate > best and side_to_move == 1) or (candidate < best and side_to_move == -1):
             return candidate
@@ -81,6 +84,8 @@ class Search:
         self.nodes = 0
         self.leaves = 0
         self.clear_history()
+
+        stderr.write("Thinking time: " + str(self.current_move_time()) + "\n")
 
         bestMove = None
         depth = 0
