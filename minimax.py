@@ -77,17 +77,13 @@ class Search:
         self.tt[node.gethash()] = (bestValue, depth, best)
         return bestValue
 
+    # there is some bug where we miss losses when we use mtdf
     def mtdf(self, root, depth, estimate):
-
         g = estimate
-        
         upper =  9999999
         lower = -9999999
         while lower < upper:
-            if g == lower:
-                beta = g + 1
-            else:
-                beta = g
+            beta = max(g, lower + 1)
             g = self.minimax(root, depth, beta - 1, beta,)
             if g < beta:
                 upper = g
@@ -114,7 +110,8 @@ class Search:
         while True:
             try:
                 depth += 1
-                score = self.mtdf(self.root, depth, score)
+                #score = self.mtdf(self.root, depth, score)
+                score = self.minimax(self.root, depth, -999999, 999999)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
