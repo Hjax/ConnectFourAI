@@ -8,8 +8,6 @@ from sys import stderr, stdin, stdout
 # runs can be updated whenever a peg is placed
 # threats need to be updated in a 6 by 6 box around every placed peg, this is slow as dirt
 
-from profilehooks import profile
-
 # self.board[row][column]
 
 #how many squares to add to a location to move a certain direction on the grid
@@ -236,7 +234,6 @@ if __name__ == "__main_1_" :
 
 def test_speed_simple():
     print ""
-    return
     for x in range(0, 3):
         foo = Root_Node()
         start = time.time()
