@@ -2,6 +2,7 @@ import math, random, time
 import copy
 from minimax import Search
 from sys import stderr, stdin, stdout
+from book import book
 
 # so notes on keeping track of important things
 
@@ -24,6 +25,7 @@ class Root_Node:
     def __init__(self, setup=True):
 
         if setup:
+            self.line = ""
             self.pieces_played = 0
             self.side_to_move = 1
             self.board = []
@@ -36,6 +38,8 @@ class Root_Node:
 
         # becomes true when there is a four in a row on the board
         self.won = False
+
+        self.hash = None
         
     def gethash(self):
         return str(self.board)
@@ -103,6 +107,7 @@ class Root_Node:
             stderr.flush()
     
     def make_move(self, column):
+        self.line = self.line + str(column)
         for row in range(0, len(self.board)):
             if self.board[(len(self.board) - 1) - row][column] == 0:
                 self.board[(len(self.board) - 1) - row][column] = self.side_to_move
@@ -183,7 +188,10 @@ class Root_Node:
         child.threats = copy.copy(self.threats)
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
+        child.line = self.line
         return child
+
+myBook = book()
 
 if __name__ == "__main__" :
     connectfour = Search(Root_Node())
@@ -211,15 +219,25 @@ if __name__ == "__main__" :
                     connectfour.set_setting(processed[2], processed[3])
                 connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "action":
-            start = time.time()
-            connectfour.set_setting("current_time", processed[2])
-            stdout.write("place_disc %s \n" % (connectfour.go()))
-            stdout.flush()
-            stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
-            stderr.flush()
+            if myBook.inBook(connectfour.root.line):
+                stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
+                stderr.flush()
+                stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))
+                stdout.flush()
+                connectfour.root.make_move(int(myBook.getMove(connectfour.root.line)))
+            else:
+                start = time.time()
+                connectfour.set_setting("current_time", processed[2])
+                stdout.write("place_disc %s \n" % (connectfour.go()))
+                stdout.flush()
+                stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
+                stderr.flush()
 if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
+        connectfour.root.display_board()
+        connectfour.nodes = 0
+        connectfour.root.make_move(int(raw_input()))
         connectfour.settings['current_time'] = 10000
         connectfour.settings['timebank'] = 10000
         connectfour.settings['time_per_move'] = 500
@@ -227,9 +245,7 @@ if __name__ == "__main_1_" :
         start = time.time()
         connectfour.go()
         print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
-        connectfour.root.display_board()
-        connectfour.nodes = 0
-        connectfour.root.make_move(int(raw_input()))
+
 
 
 def test_speed_simple():

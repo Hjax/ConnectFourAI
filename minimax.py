@@ -78,13 +78,14 @@ class Search:
         return bestValue
 
     # there is some bug where we miss losses when we use mtdf
+    # update, our alpha beta is improper for mtdf (storing results instead of bounds in tt)
     def mtdf(self, root, depth, estimate):
         g = estimate
         upper =  9999999
         lower = -9999999
         while lower < upper:
             beta = max(g, lower + 1)
-            g = self.minimax(root, depth, beta - 1, beta,)
+            g = self.minimax(root, depth, beta - 1, beta)
             if g < beta:
                 upper = g
             else:
@@ -115,7 +116,7 @@ class Search:
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
-            except:
+            except RuntimeError:
                 break
         PV = ""
         current = self.root.export()
