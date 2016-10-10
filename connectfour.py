@@ -193,7 +193,7 @@ class Root_Node:
 
 myBook = book()
 
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     connectfour.settings['current_time'] = 10000
     connectfour.settings['timebank'] = 10000
@@ -232,7 +232,7 @@ if __name__ == "__main__" :
                 stdout.flush()
                 stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
                 stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()
@@ -241,10 +241,17 @@ if __name__ == "__main_1_" :
         connectfour.settings['current_time'] = 10000
         connectfour.settings['timebank'] = 10000
         connectfour.settings['time_per_move'] = 500
-        connectfour.settings['round'] = 1   
-        start = time.time()
-        connectfour.go()
-        print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
+        connectfour.settings['round'] = 1
+        if myBook.inBook(connectfour.root.line):
+            stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
+            stderr.flush()
+            stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))
+            stdout.flush()
+            connectfour.root.make_move(int(myBook.getMove(connectfour.root.line)))
+        else:  
+            start = time.time()
+            connectfour.go()
+            print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
 
 
 
