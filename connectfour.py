@@ -193,7 +193,7 @@ class Root_Node:
 
 myBook = book()
 
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     connectfour.settings['current_time'] = 10000
     connectfour.settings['timebank'] = 10000
@@ -232,7 +232,10 @@ if __name__ == "__main_1_" :
                 stdout.flush()
                 stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
                 stderr.flush()
-if __name__ == "__main__" :
+            stderr.write("Completed Round: " + str(connectfour.settings["round"]) + "\n")
+            stderr.write("Line: " + connectfour.root.line + "\n")
+            stderr.flush()
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()

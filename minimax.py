@@ -1,7 +1,8 @@
 from sys import stderr, stdin, stdout
 import time, random
 
-ROUND_TARGET = 25.0
+# we hit search explosion 19 ply before the end
+SEARCH_EXPLOSION = 19
 
 class Search:
     def __init__(self, root):
@@ -25,9 +26,11 @@ class Search:
         current_time = int(self.settings["current_time"])
         increment = int(self.settings["time_per_move"])
         current_round = int(self.settings["round"])
-        if current_round >= ROUND_TARGET:
+        if current_round >= 42 - SEARCH_EXPLOSION:
             return current_time / 1000.0
-        thinking_time = (current_time + increment * (ROUND_TARGET - current_round)) / (ROUND_TARGET - current_round)
+        thinking_time = (current_time + increment * 0.5 *(42 - (current_round + SEARCH_EXPLOSION))) / ((42 - SEARCH_EXPLOSION - current_round) * 0.5)
+        #print("Total timeback left: " + str(current_time + increment * 0.5 *(42 - (current_round + SEARCH_EXPLOSION))))
+        #print("Total Rounds left: " + str(((42 - SEARCH_EXPLOSION - current_round) * 0.5)))
         return min(thinking_time, current_time) / 1000.0
     def pick_best(self, candidate, best, side_to_move):
         if (candidate > best and side_to_move == 1) or (candidate < best and side_to_move == -1):
@@ -116,7 +119,7 @@ class Search:
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
-            except RuntimeError:
+            except:
                 break
         PV = ""
         current = self.root.export()
