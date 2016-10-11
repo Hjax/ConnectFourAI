@@ -121,7 +121,7 @@ class Search:
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
-            except RuntimeError:
+            except:
                 break
         PV = ""
         current = self.root.export()
