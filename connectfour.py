@@ -14,6 +14,7 @@ from book import book
 #how many squares to add to a location to move a certain direction on the grid
 dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1)}
 opposite = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
+directions_cache = {}
         # the opposite of each direction, might be better to do + 4 % 7 or something
 
             #       2 3 4
@@ -99,7 +100,9 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     
     def valid_directions(self, a):
-        return [x for x in dmap if self.is_valid(self.traverse_step(a, x))]
+        if a not in directions_cache:
+            directions_cache[a] = [x for x in dmap if self.is_valid(self.traverse_step(a, x))]
+        return directions_cache[a]
                
     def display_board(self):
         for row in self.board:
