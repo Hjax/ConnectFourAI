@@ -12,7 +12,7 @@ from book import book
 # self.board[row][column]
 
 #how many squares to add to a location to move a certain direction on the grid
-dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1), 7:(1, 0)}
+dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1)}
 opposite = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
         # the opposite of each direction, might be better to do + 4 % 7 or something
 
@@ -51,8 +51,6 @@ class Root_Node:
                 self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
     
     def update_direction(self, square, direction): 
-        if direction == 7: # we dont need to traverse downwards 
-            return
         path = self.traverse(square, direction)
         current_loc = path.next()
         base_board_value = self.board[square[0]][square[1]]
