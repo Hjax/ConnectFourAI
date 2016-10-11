@@ -75,7 +75,8 @@ class Root_Node:
 	# if we are going to have these functions they should be memoized
     
     def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
-        return t[0] * 7 + t[1]
+        # plus 1 so we cant have the threat -0.0
+        return (t[0] * 7 + t[1]) + 1
     def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
         current_loc = location
         while True:
@@ -180,6 +181,10 @@ class Root_Node:
             elif negitiveHanging > 0 and (self.pieces_played - len(taken)) % 2 == 1:
                 score -= 500
         return score
+
+    def load_line(self, line):
+        for i in line:
+            self.make_move(int(i))
 
     def export(self):
         child = Root_Node(False)
