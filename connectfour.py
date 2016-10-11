@@ -191,16 +191,16 @@ class Root_Node:
         child = Root_Node(False)
         child.board = [x[:] for x in self.board]
         child.runs = {k:v[:] for k,v in self.runs.items()}
-        child.threats = copy.copy(self.threats)
+        child.threats = self.threats.copy()
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
         child.line = self.line
-        child.columns = copy.copy(self.columns)
+        child.columns = self.columns[:]
         return child
 
 myBook = book()
 
-if __name__ == "__main_3_" :
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     connectfour.settings['current_time'] = 10000
     connectfour.settings['timebank'] = 10000
