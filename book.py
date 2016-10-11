@@ -35,7 +35,8 @@ class book:
                     "330": "3",
                     "331": "2",
                     "332": "1",
-                    "333": "3"
+                    "333": "3",
+                    "3333": "3"
                     }
     def reverse(self, line):
         return "".join([str(6 - int(x)) for x in line])
