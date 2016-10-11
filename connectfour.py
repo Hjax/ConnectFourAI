@@ -76,7 +76,7 @@ class Root_Node:
     
     def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
         # plus 1 so we cant have the threat -0.0
-        return (t[0] * 7 + t[1]) + 1
+        return t[0] * 7 + t[1]
     def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
         current_loc = location
         while True:
@@ -116,15 +116,15 @@ class Root_Node:
                 self.pieces_played += 1
                 if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
                     self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
-                    if math.copysign(1, self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                    if 1 == self.side_to_move:
                         self.won = True
                 if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
                     self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
-                    if math.copysign(1, -1 * self.board_tuple_to_number(((len(self.board) - 1) - row, column))) == self.side_to_move:
+                    if -1 == self.side_to_move:
                         self.won = True
                 for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
-                    
                     self.update_direction(( (len(self.board) - 1) - row, column), direction)
+                    
                 self.side_to_move *= -1
                 break
         self.current_score = "nan"
@@ -198,7 +198,7 @@ class Root_Node:
 
 myBook = book()
 
-if __name__ == "__main__" :
+if __name__ == "__main_3_" :
     connectfour = Search(Root_Node())
     connectfour.settings['current_time'] = 10000
     connectfour.settings['timebank'] = 10000
@@ -240,7 +240,7 @@ if __name__ == "__main__" :
             stderr.write("Completed Round: " + str(connectfour.settings["round"]) + "\n")
             stderr.write("Line: " + connectfour.root.line + "\n")
             stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()
