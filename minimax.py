@@ -15,12 +15,15 @@ class Search:
         self.root = root
         self.tt = {} # WOOT Transposition table! {boardstring: [depth, score]}
         self.history = {} # History uses negative values to avoid reversing the list
+
+        self.allowed_time = None
     def clear_history(self):
         for depth in range(0, 20):
             for move in range(0, 7):
                 self.history[(move, depth)] = 0
     def set_setting(self, setting, value):
         self.settings[setting] = value
+        
     def current_move_time(self): # returns the amount of time we are going to think for this move
         max_time = int(self.settings["timebank"])
         current_time = int(self.settings["current_time"])
@@ -41,7 +44,7 @@ class Search:
         self.nodes += 1
         oldBest = None
 
-        if self.current_move_time() - (time.time() - self.start_time) < 0.05:
+        if self.allowed_time - (time.time() - self.start_time) < 0.05:
             raise RuntimeError("Out of time!")
         
         if node.gethash() in self.tt:
@@ -101,6 +104,8 @@ class Search:
         self.leaves = 0
         self.clear_history()
 
+        self.allowed_time = self.current_move_time()
+
         stderr.write("Thinking time: " + str(self.current_move_time()) + "\n")
 
         bestMove = None
@@ -116,7 +121,7 @@ class Search:
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
-            except:
+            except RuntimeError:
                 break
         PV = ""
         current = self.root.export()
