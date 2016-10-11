@@ -48,22 +48,19 @@ class Search:
             if self.tt[node.gethash()][1] == depth:
                 return self.tt[node.gethash()][0]
             oldBest = self.tt[node.gethash()][2]
-        if depth == 0 or abs(node.score()) == 10000 or len(node.legal_moves()) == 0:
+
+        myScore = node.score()
+        if depth == 0 or abs(myScore) == 10000 or len(node.legal_moves()) == 0:
             self.leaves += 1
-            return node.score()
-        if node.side_to_move == 1:
-            bestValue = -10001
-        else:
-            bestValue = 10000
+            return myScore
+        bestValue = 10001 * -1 * node.side_to_move
         moveset = sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)])
         if oldBest is not None and oldBest in moveset:
             moveset.remove(oldBest)
-            moveset = [oldBest] + moveset
+            moveset.insert(0, oldBest)
         # set our bestmove to none and update it as we search
-        best = None
+        best = moveset[0]
         for child in moveset:
-            if best is None:
-                best = child
             current_child = node.export()
             current_child.make_move(child)
             search = self.minimax(current_child, depth - 1, alpha, beta)

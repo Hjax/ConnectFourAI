@@ -127,7 +127,7 @@ class Root_Node:
                     
                 self.side_to_move *= -1
                 break
-        self.current_score = "nan"
+
     def legal_moves(self):
         return sorted([x for x in range(0, 7) if self.board[0][x] == 0], key=lambda k: abs(3 - k))
 
