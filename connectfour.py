@@ -14,7 +14,7 @@ from book import book
 #how many squares to add to a location to move a certain direction on the grid
 dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1)}
 opposite = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
-directions_cache = {}
+
         # the opposite of each direction, might be better to do + 4 % 7 or something
 
             #       2 3 4
@@ -77,16 +77,19 @@ class Root_Node:
     def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
         # plus 1 so we cant have the threat -0.0
         return t[0] * 7 + t[1]
+    
     def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
         current_loc = location
         while True:
             current_loc = (current_loc[0] + dmap[direction][0], current_loc[1] + dmap[direction][1])
             yield current_loc
+
+    # no benefit to memoizing this, 10/11/16        
     def traverse_step(self, location, direction):
         return (location[0] + dmap[direction][0], location[1] + dmap[direction][1])
     
     def is_valid(self, location):
-        return 0 <= location[0] < 6 and 0 <= location[1] < 7
+        return location in directions_cache
     
     def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
         # this might not work properly because of the elifs, should it always check both directions?
@@ -98,11 +101,6 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][opposite[direction]])]))
         elif abs(first_direction + opposite_direction) >= 3: # this is checked if A or not B, optimization?
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-    
-    def valid_directions(self, a):
-        if a not in directions_cache:
-            directions_cache[a] = [x for x in dmap if self.is_valid(self.traverse_step(a, x))]
-        return directions_cache[a]
                
     def display_board(self):
         for row in self.board:
@@ -127,7 +125,7 @@ class Root_Node:
             self.threats.remove(-1 * board_number)
             if -1 == self.side_to_move:
                 self.won = True
-        for direction in self.valid_directions((row, column)):
+        for direction in directions_cache[(row, column)]:
             self.update_direction((row, column), direction)
             
         self.side_to_move *= -1
@@ -200,6 +198,13 @@ class Root_Node:
         child.line = self.line
         child.columns = self.columns[:]
         return child
+
+directions_cache = {}
+starter = Root_Node()
+for row in range(0, 6):
+    for column in range(0, 7):
+        directions_cache[(row, column)] = [x for x in dmap if 0 <= starter.traverse_step((row, column), x)[0] < 6
+                                           and 0 <= starter.traverse_step((row, column), x)[1] < 7]
 
 myBook = book()
 
