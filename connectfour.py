@@ -25,6 +25,7 @@ class Root_Node:
     def __init__(self, setup=True):
 
         if setup:
+            self.columns = [0,0,0,0,0,0,0]
             self.line = ""
             self.pieces_played = 0
             self.side_to_move = 1
@@ -109,24 +110,24 @@ class Root_Node:
     
     def make_move(self, column):
         self.line = self.line + str(column)
-        for row in range(0, len(self.board)):
-            if self.board[(len(self.board) - 1) - row][column] == 0:
-                self.board[(len(self.board) - 1) - row][column] = self.side_to_move
-                # remove the threat if its in our threat list
-                self.pieces_played += 1
-                if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
-                    self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
-                    if 1 == self.side_to_move:
-                        self.won = True
-                if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
-                    self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
-                    if -1 == self.side_to_move:
-                        self.won = True
-                for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
-                    self.update_direction(( (len(self.board) - 1) - row, column), direction)
-                    
-                self.side_to_move *= -1
-                break
+        row = self.columns[column]
+        self.columns[column] += 1
+
+        self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+        # remove the threat if its in our threat list
+        self.pieces_played += 1
+        if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
+            self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+            if 1 == self.side_to_move:
+                self.won = True
+        if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
+            self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+            if -1 == self.side_to_move:
+                self.won = True
+        for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
+            self.update_direction(( (len(self.board) - 1) - row, column), direction)
+            
+        self.side_to_move *= -1
 
     def legal_moves(self):
         return sorted([x for x in range(0, 7) if self.board[0][x] == 0], key=lambda k: abs(3 - k))
@@ -194,6 +195,7 @@ class Root_Node:
         child.side_to_move = self.side_to_move
         child.pieces_played = self.pieces_played
         child.line = self.line
+        child.columns = copy.copy(self.columns)
         return child
 
 myBook = book()
