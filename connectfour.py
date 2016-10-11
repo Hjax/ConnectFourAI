@@ -101,7 +101,7 @@ class Root_Node:
             self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
     
     def valid_directions(self, a):
-        return [x for x in dmap.keys() if self.is_valid(self.traverse_step(a, x))]
+        return [x for x in dmap if self.is_valid(self.traverse_step(a, x))]
                
     def display_board(self):
         for row in self.board:
@@ -110,22 +110,24 @@ class Root_Node:
     
     def make_move(self, column):
         self.line = self.line + str(column)
-        row = self.columns[column]
+        row = (len(self.board) - 1) - self.columns[column]
         self.columns[column] += 1
 
-        self.board[(len(self.board) - 1) - row][column] = self.side_to_move
+        board_number = self.board_tuple_to_number((row, column))
+
+        self.board[row][column] = self.side_to_move
         # remove the threat if its in our threat list
         self.pieces_played += 1
-        if self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
-            self.threats.remove(self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+        if board_number in self.threats:
+            self.threats.remove(board_number)
             if 1 == self.side_to_move:
                 self.won = True
-        if -1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ) in self.threats:
-            self.threats.remove(-1 * self.board_tuple_to_number( ((len(self.board) - 1) - row, column) ))
+        if -1 * board_number in self.threats:
+            self.threats.remove(-1 * board_number)
             if -1 == self.side_to_move:
                 self.won = True
-        for direction in self.valid_directions(((len(self.board) - 1) - row, column)):
-            self.update_direction(( (len(self.board) - 1) - row, column), direction)
+        for direction in self.valid_directions((row, column)):
+            self.update_direction((row, column), direction)
             
         self.side_to_move *= -1
 
