@@ -3,12 +3,19 @@ vertical_base = 0b1000000100000010000001
 diag_left_base = 0b1000000010000000100000001
 diag_right_base = 0b1000001000001000001000
 
+def newLineSplit(string):
+    n = 7
+    chunks = [string[i:i+n] for i in range(0, len(string), n)]
+    for i in chunks:
+        print(i)
+    print ""
+
 horizontal_bases = []
 for i in range(6):
     for j in range(4):
         horizontal_bases.append(horizontal_base)
         horizontal_base *= 2
-    horizontal_base *= 2**4
+    horizontal_base *= 2**3
     
 vertical_bases = []
 for i in range(21):
@@ -22,17 +29,12 @@ for i in range(3):
         diag_bases.append(diag_right_base)
         diag_left_base *= 2
         diag_right_base *= 2
-    diag_left_base *= 2**4
-    diag_right_base *= 2**4
+    diag_left_base *= 2**3
+    diag_right_base *= 2**3
 
 bases = horizontal_bases + vertical_bases + diag_bases
 
-def newLineSplit(string):
-    n = 7
-    chunks = [string[i:i+n] for i in range(0, len(string), n)]
-    for i in chunks:
-        print(i)
-    print ""
+
 
 for i in bases:
     thing = bin(i)[2:].zfill(42)
@@ -45,5 +47,6 @@ for i in bases:
         if i in diag_bases:
             print "d"
             
-    #newLineSplit()
-    
+        newLineSplit(thing)
+
+print bases

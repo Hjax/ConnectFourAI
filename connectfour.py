@@ -4,208 +4,119 @@ from minimax import Search
 from sys import stderr, stdin, stdout
 from book import book
 
-# so notes on keeping track of important things
+#from profilehooks import profile
 
-# runs can be updated whenever a peg is placed
-# threats need to be updated in a 6 by 6 box around every placed peg, this is slow as dirt
+def newLineSplit(string):
+    string = bin(string)[2:].zfill(42)
+    n = 7
+    chunks = [string[i:i+n] for i in range(0, len(string), n)]
+    for i in chunks:
+        print(i)
+    print ""
 
-# self.board[row][column]
+win_conds = [15, 30, 60, 120, 1920, 3840, 7680, 15360, 245760, 491520, 983040, 1966080, 31457280, 62914560, 125829120, 251658240, 4026531840, 8053063680, 16106127360, 32212254720, 515396075520, 1030792151040, 2061584302080, 4123168604160, 2113665, 4227330, 8454660, 16909320, 33818640, 67637280, 135274560, 270549120, 541098240, 1082196480, 2164392960, 4328785920, 8657571840, 17315143680, 34630287360, 69260574720, 138521149440, 277042298880, 554084597760, 1108169195520, 2216338391040, 16843009, 2130440, 33686018, 4260880, 67372036, 8521760, 134744072, 17043520, 2155905152, 272696320, 4311810304, 545392640, 8623620608, 1090785280, 17247241216, 2181570560, 275955859456, 34905128960, 551911718912, 69810257920, 1103823437824, 139620515840, 2207646875648, 279241031680]
 
-#how many squares to add to a location to move a certain direction on the grid
-dmap = {0:(1, -1), 1:(0, -1), 2:(-1, -1), 3:(-1, 0), 4:(-1, 1), 5:(0, 1), 6:(1, 1)}
-opposite = {0:4, 1:5, 2:6, 3:7, 4:0, 5:1, 6:2, 7:3}
 
-        # the opposite of each direction, might be better to do + 4 % 7 or something
-
-            #       2 3 4
-            #       1 A 5
-            #       0 7 6
+# we can deduce columns with bitboard math as well:
+# popcnt of col & board = number of pieces in that board
+cols = [2216338399296, 1108169199648, 554084599824, 277042299912, 138521149956, 69260574978, 34630287489]
 
  
 class Root_Node:
-    def __init__(self, setup=True):
-
-        if setup:
-            self.columns = [0,0,0,0,0,0,0]
-            self.line = ""
-            self.pieces_played = 0
-            self.side_to_move = 1
-            self.board = []
-            self.runs = {}
-            self.threats = set() # set of int threats, sign determines side
-            for row in range(0, 6):
-                for column in range(0, 7):
-                    self.runs[(row, column)] = [0, 0, 0, 0, 0, 0, 0, 0]
-            self.board = [[0 for x in range(0, 7)] for x in range(0, 6)]
-
-        # becomes true when there is a four in a row on the board
-        self.won = False
-
-        self.hash = None
+    def __init__(self):
+        # initialize the bitboards for each side
+        self.board = [0,0]
+        self.value = 0
+        self.side_to_move = True
         
-    def gethash(self):
-        return str(self.board)
-    
-    def update(self, position): # takes a positon from the engine and updates our internal position
-        for i in range(0, 42):
-            if self.board[i / 7][i % 7] == 0 and position[i] in ['1', '2']:
-                self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
-    
-    def update_direction(self, square, direction): 
-        path = self.traverse(square, direction)
-        current_loc = path.next()
-        base_board_value = self.board[square[0]][square[1]]
-        starting_value = 1
-        if math.copysign(1, self.runs[square][opposite[direction]]) == base_board_value:
-            starting_value = abs(self.runs[square][opposite[direction]]) + 1
-        while self.is_valid(current_loc):
-            current_board_value = self.board[current_loc[0]][current_loc[1]]
-            if current_board_value == 0:
-                self.runs[current_loc][opposite[direction]] = starting_value * base_board_value
-                self.update_threats(current_loc, direction)
-                break # we break when we hit an enemy or blank block
-            elif current_board_value == base_board_value:
-                starting_value += 1
-            else:
+    # according to here: http://www.valuedlessons.com/2009/01/popcount-in-python-with-benchmarks.html
+    # this is the fastest way to do a popcnt in python with the number of bits i need
+    def popcount(self, v):
+        c = 0
+        while v:
+            v &= v - 1
+            c += 1
+        return c
+
+    def col_height(self, column):
+        return self.popcount(cols[column] & self.value)
+
+    # makes a move in a column
+    def make(self, column):
+        self.board[self.side_to_move] |= (2**(6-column))*2**(7*self.col_height(column))
+        self.side_to_move = not self.side_to_move
+        self.value = self.board[0] | self.board[1]
+
+    # unmakes a move in a column (subtract one from column height to get the correct move)
+    def unmake(self, column):
+        self.side_to_move = not self.side_to_move
+        self.board[self.side_to_move] ^= (2**(6-column))*2**(7*(self.col_height(column) - 1))
+        self.value = self.board[0] | self.board[1]
+
+    def is_won(self):
+        for i in win_conds:
+            if i > self.value:
                 break
-            # we are at an enemy square, break
-            current_loc = path.next()
+            # if the board is won, that means the person who just moved won
+            if self.board[not self.side_to_move] & i == i:
+                return True
+        return False
 
-    # HELPER FUNCTIONS FOR BOARD INTERACTION
-	# if we are going to have these functions they should be memoized
-    
-    def board_tuple_to_number(self, t): # given a tuple for a cordinate of the board, return the numeric value
-        # plus 1 so we cant have the threat -0.0
-        return t[0] * 7 + t[1]
-    
-    def traverse(self, location, direction): # generator of all the squares in the direction you give, location as a tuple, direction as an int
-        current_loc = location
-        while True:
-            current_loc = (current_loc[0] + dmap[direction][0], current_loc[1] + dmap[direction][1])
-            yield current_loc
+    # takes a power of two (a single square) and checks if the square below it is empty or not
+    def is_hanging(self, square):
+        return not (square / 2**7) & self.value
 
-    # no benefit to memoizing this, 10/11/16        
-    def traverse_step(self, location, direction):
-        return (location[0] + dmap[direction][0], location[1] + dmap[direction][1])
-    
-    def is_valid(self, location):
-        return location in directions_cache
-    
-    def update_threats(self, location, direction): # Takes only one direction, automatically checks both direction
-        # this might not work properly because of the elifs, should it always check both directions?
-        first_direction = self.runs[location][direction]
-        opposite_direction = self.runs[location][opposite[direction]]
-        if abs(first_direction) == 3:
-            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-        if abs(opposite_direction) == 3:
-            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][opposite[direction]])]))
-        elif abs(first_direction + opposite_direction) >= 3: # this is checked if A or not B, optimization?
-            self.threats = self.threats.union(set([self.board_tuple_to_number(location) * math.copysign(1, self.runs[location][direction])]))
-               
-    def display_board(self):
-        for row in self.board:
-            stderr.write(str(map(lambda x: x.zfill(2), map(str, row))) + '\n')
-            stderr.flush()
-    
-    def make_move(self, column):
-        self.line = self.line + str(column)
-        row = (len(self.board) - 1) - self.columns[column]
-        self.columns[column] += 1
+    # generates all of the legal moves in a position
+    def move_gen(self):
+        return [x for x in range(7) if cols[x] & (self.board[0] & self.board[1]) != cols[x]]
 
-        board_number = self.board_tuple_to_number((row, column))
 
-        self.board[row][column] = self.side_to_move
-        # remove the threat if its in our threat list
-        self.pieces_played += 1
-        if board_number in self.threats:
-            self.threats.remove(board_number)
-            if 1 == self.side_to_move:
-                self.won = True
-        if -1 * board_number in self.threats:
-            self.threats.remove(-1 * board_number)
-            if -1 == self.side_to_move:
-                self.won = True
-        for direction in directions_cache[(row, column)]:
-            self.update_direction((row, column), direction)
-            
-        self.side_to_move *= -1
+    def find_threats(self):
+        threats = []
+        for i in win_conds:
+            if i > self.value:
+                break
+            red = self.board[0] & i
+            blue = self.board[1] & i
+            if blue == 0 and self.popcount(red) == 3:
+                threats.append(red ^ i)
+            elif red == 0 and self.popcount(blue) == 3:
+                threats.append(blue ^ i * -1)
+        return threats
 
-    def legal_moves(self):
-        return sorted([x for x in range(0, 7) if self.board[0][x] == 0], key=lambda k: abs(3 - k))
+    def score(self):
+        if self.is_won():
+            # someone just won, return a score thats bad for the side to move
+            return -10000 * (self.side_to_move * 2 - 1)
 
-    def score(self): # todo detect hanging threats sooner, its faster
         score = 0
 
-        # i think we can always assume that the person who won did it last move
-        if self.won:
-            return 10000 * -1 * self.side_to_move
-        hanging_threats = []
-        immeadiate_threats = []
-        for threat in self.threats:
-			# if the square below the threat is valid and is empty
-            if abs(threat) + 7 in range(0, 42) and self.board[int((abs(threat) + 7) / 7)][int((abs(threat) + 7) % 7)] == 0:
-                hanging_threats.append(threat)
+        blanks = self.popcount(self.value)
+        threats = self.find_threats()
+#@profile
+def speed_test():
+    foo = Root_Node()
+    for x in range(0, 6):
+        start = time.time()
+        count = 0
+        while time.time() - start < 2:
+            count += 1
+            if foo.move_gen():
+                move = random.choice(foo.move_gen())
+                foo.make(move)
+                foo.score()
             else:
-                immeadiate_threats.append(threat)
-        for threat in immeadiate_threats:
-            if math.copysign(1, threat) == self.side_to_move:
-                return 9999 * self.side_to_move
-        # maybe only do hanging threats, but we have a different way to calculate this, so idk if this is needed
-        score += len(filter(lambda x: x > 0, self.threats))
-        # this is really subtracting x < 0 above
-        score -= len(self.threats) - score
+                foo = Root_Node()
+        
+        print(count / 2)
+        
+#foo = Root_Node()        
+#while True:
+ ##   foo.make(int(raw_input()))
+   # newLineSplit(foo.board[not foo.side_to_move])
+   # print(foo.find_threats())
 
-        taken = []
-        for threat in hanging_threats:
-            if abs(threat) not in taken:
-                taken.append(abs(threat))
-            if (abs(threat) + 7) not in taken:
-                taken.append(abs(threat) + 7)
-            clearer = self.traverse((int(threat / 7), int(threat % 7)), 3)
-            next_step = clearer.next()
-            while self.is_valid(next_step):
-                if self.board_tuple_to_number(next_step) not in taken:
-                    taken.append(self.board_tuple_to_number(next_step))
-                    next_step = clearer.next()
-                else:
-                    break
-        # you want it to be odd when its your turn to move, even otherwise
-        positiveHanging = len(filter(lambda x: x > 0, hanging_threats))
-        negitiveHanging = len(hanging_threats) - positiveHanging
-        if self.side_to_move == 1:
-            if positiveHanging > 0 and (self.pieces_played - len(taken)) % 2 == 1:
-                score += 500
-            elif negitiveHanging > 0 and (self.pieces_played - len(taken)) % 2 == 0:
-                score -= 500
-        else:
-            if positiveHanging > 0 and (self.pieces_played - len(taken)) % 2 == 0:
-                score += 500
-            elif negitiveHanging > 0 and (self.pieces_played - len(taken)) % 2 == 1:
-                score -= 500
-        return score
-
-    def load_line(self, line):
-        for i in line:
-            self.make_move(int(i))
-
-    def export(self):
-        child = Root_Node(False)
-        child.board = [x[:] for x in self.board]
-        child.runs = {k:v[:] for k,v in self.runs.items()}
-        child.threats = self.threats.copy()
-        child.side_to_move = self.side_to_move
-        child.pieces_played = self.pieces_played
-        child.line = self.line
-        child.columns = self.columns[:]
-        return child
-
-directions_cache = {}
-starter = Root_Node()
-for row in range(0, 6):
-    for column in range(0, 7):
-        directions_cache[(row, column)] = [x for x in dmap if 0 <= starter.traverse_step((row, column), x)[0] < 6
-                                           and 0 <= starter.traverse_step((row, column), x)[1] < 7]
-
+speed_test()
 myBook = book()
 
 if __name__ == "__main_1_" :
@@ -250,7 +161,8 @@ if __name__ == "__main_1_" :
             stderr.write("Completed Round: " + str(connectfour.settings["round"]) + "\n")
             stderr.write("Line: " + connectfour.root.line + "\n")
             stderr.flush()
-if __name__ == "__main__" :
+            
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()
@@ -272,76 +184,3 @@ if __name__ == "__main__" :
             print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
 
 
-
-def test_speed_simple():
-    print ""
-    for x in range(0, 3):
-        foo = Root_Node()
-        start = time.time()
-        counter = 0
-        while time.time() - start < 2:
-            counter += 1
-            if len(foo.legal_moves()) == 0 or foo.won:
-                foo = Root_Node()
-            else:
-                foo.export()
-                foo.make_move(random.choice(foo.legal_moves()))
-                foo.score()
-        print counter
-        assert counter > 1000
-def test_minimax():
-    connectfour = Search(Root_Node())
-    connectfour.settings['current_time'] = 6000
-    connectfour.settings['timebank'] = 10000
-    connectfour.settings['time_per_move'] = 500
-    connectfour.settings['round'] = 1   
-    for i in range(0, 5):
-        start = time.time()
-        connectfour.go()
-        print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
-def test_threats_simple():
-    foo = Root_Node()
-    foo.make_move(0)
-    foo.make_move(6)
-    foo.make_move(1)
-    foo.make_move(5)
-    foo.make_move(2)
-    assert 38 in foo.threats
-    assert -38 not in foo.threats
-    foo.make_move(4)
-    assert -38 in foo.threats
-    assert 38 in foo.threats
-    foo.make_move(3)
-    assert -38 not in foo.threats
-    assert 38 not in foo.threats
-def test_traverse():
-    foo = Root_Node()
-    bar = foo.traverse((1, 2), 6)
-    assert bar.next() == (2, 3)
-    assert bar.next() == (3, 4)
-def test_square_validity():
-    foo = Root_Node()
-    assert not foo.is_valid((-1, 5))
-    for i in range(0, 7):
-        for x in range(0, 6):
-            assert foo.is_valid((x, i))
-def test_full_game():
-    foo = Root_Node()
-    for i in "4444452322223353347777362177555511111":
-        foo.make_move(int(i) - 1)
-    assert foo.board == [[1, 1, 1, -1, -1, 0, -1], [-1, -1, 1, 1, 1, 0, 1], [1, 1, -1, -1, -1, 0, -1], [-1, -1, -1, 1, 1, 0, 1], [1, 1, 1, -1, 1, 0, -1], [-1, 1, -1, 1, -1, -1, 1]]
-    assert foo.threats == set([26.0, -5.0, 12.0, -19.0])
-def test_node_export():
-    foo = Root_Node()
-    foo.make_move(0)
-    bar = foo.export()
-    foo.make_move(0)
-    foo.make_move(1)
-    foo.make_move(1)
-    foo.make_move(2)
-    foo.make_move(2)
-    assert bar.board != foo.board
-    assert bar.runs != foo.runs
-    assert bar.threats != foo.threats
-    assert bar.pieces_played != foo.pieces_played
-    assert bar.side_to_move != foo.side_to_move
