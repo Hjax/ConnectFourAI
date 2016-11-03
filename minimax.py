@@ -9,6 +9,8 @@ class Search:
     def __init__(self, root):
 
         self.start_time = 0
+
+        self.line = ""
         
         self.settings = {}
         self.nodes = 0
@@ -117,4 +119,5 @@ class Search:
             
         self.root = backup
         self.root.make(bestMove)
+
         return bestMove

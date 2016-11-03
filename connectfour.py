@@ -36,6 +36,15 @@ class Root_Node:
     def gethash(self):
         return str(self.board)
 
+    def update(self, position): # takes a position from the engine and updates our internal position
+        for i in range(6):
+            for j in range(7):
+                value = ((6 - j) + ((5 - i) * 7))
+                space = 2**value
+                if self.value & space == 0 and position[value] in ['1', '2']:
+                    self.make(6 - j)
+        return 6 - j
+
     def turn(self):
         return (self.side_to_move * 2 - 1)
 
@@ -139,26 +148,30 @@ if __name__ == "__main_1_" :
         if processed[0] == "update":
             if processed[1] == "game":
                 if processed[2] == "field":
-                    connectfour.root.update(processed[3].replace(";", ",").split(","))
+                    move = connectfour.root.update(processed[3].replace(";", ",").split(","))
+                    connectfour.line += str(move)
                 if processed[2] == "round":
                     connectfour.set_setting(processed[2], processed[3])
                 connectfour.set_setting(processed[1], processed[2])
         if processed[0] == "action":
-            if myBook.inBook(connectfour.root.line):
-                stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
+            if myBook.inBook(connectfour.line):
+                stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.line)))
                 stderr.flush()
-                stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))
+                stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.line)))
                 stdout.flush()
-                connectfour.root.make_move(int(myBook.getMove(connectfour.root.line)))
+                connectfour.root.make(int(myBook.getMove(connectfour.line)))
+                connectfour.line += myBook.getMove(connectfour.line)
             else:
                 start = time.time()
                 connectfour.set_setting("current_time", processed[2])
-                stdout.write("place_disc %s \n" % (connectfour.go()))
+                move = connectfour.go()
+                stdout.write("place_disc %s \n" % (move))
+                connectfour.line += str(move)
                 stdout.flush()
                 stderr.write("Searched %s nodes in %s seconds \n" % (str(connectfour.nodes), str(time.time() - start)))
                 stderr.flush()
             stderr.write("Completed Round: " + str(connectfour.settings["round"]) + "\n")
-            stderr.write("Line: " + connectfour.root.line + "\n")
+            stderr.write("Line: " + connectfour.line + "\n")
             stderr.flush()
             
 if __name__ == "__main__" :
@@ -166,17 +179,20 @@ if __name__ == "__main__" :
     while True:
         connectfour.root.display_board()
         connectfour.nodes = 0
-        connectfour.root.make(int(raw_input()))
+        move = int(raw_input())
+        connectfour.root.make(move)
+        connectfour.line += str(move)
         connectfour.settings['current_time'] = 100000
         connectfour.settings['timebank'] = 100000
         connectfour.settings['time_per_move'] = 5000
         connectfour.settings['round'] = 1
-        if False:
-            stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
+        if myBook.inBook(connectfour.line):
+            stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.line)))
             stderr.flush()
-            stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))
+            stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.line)))
             stdout.flush()
-            connectfour.root.make_move(int(myBook.getMove(connectfour.root.line)))
+            connectfour.root.make(int(myBook.getMove(connectfour.line)))
+            connectfour.line += myBook.getMove(connectfour.line)
         else:  
             start = time.time()
             connectfour.go()
