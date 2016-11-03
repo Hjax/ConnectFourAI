@@ -43,8 +43,8 @@ class Root_Node:
             c += 1
         return c
 
-    def side_to_move_adjusted(self):
-        return self.side_to_move + 1 / 2
+    def turn(self):
+        return (self.side_to_move * 2 - 1)
 
     def col_height(self, column):
         return self.popcount(cols[column] & self.value)
@@ -75,7 +75,6 @@ class Root_Node:
     # generates all of the legal moves in a position
     def move_gen(self):
         return sorted([x for x in range(7) if cols[x] & (self.board[0] & self.board[1]) != cols[x]], key=lambda k: abs(3 - k))
-
 
     def find_threats(self):
         threats = []
@@ -109,6 +108,10 @@ class Root_Node:
                 immeadiate_threats.append(threat)
             else:
                 hanging_threats.append(threat)
+
+        for threat in immeadiate_threats:
+            if threat > 0 and self.side_to_move or threat < 0 and not self.side_to_move:
+                return 9999 * self.turn()
 
         return score
                 
