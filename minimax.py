@@ -105,16 +105,16 @@ class Search:
         backup = deepcopy(self.root)
         depth = 0
         while True:
-            #try:
+            try:
                 depth += 1
-                score = self.minimax(10, -999999, 999999)
+                score = self.minimax(depth, -999999, 999999)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
                 if depth > 20:
                     break
-            #except:
-            #    break
+            except:
+                break
             
         self.root = backup
         self.root.make(bestMove)
