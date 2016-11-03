@@ -86,7 +86,6 @@ class Search:
         self.tt[self.root.gethash()] = (bestValue, depth, best)
         return bestValue
                 
-    
     def go(self):
         # clear the tt before starting a search also clear stats
         #self.tt = {}
