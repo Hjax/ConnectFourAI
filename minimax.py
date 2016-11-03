@@ -1,5 +1,6 @@
 from sys import stderr, stdin, stdout
 import time, random
+from copy import deepcopy
 
 # we hit search explosion 19 ply before the end
 SEARCH_EXPLOSION = 19
@@ -40,61 +41,47 @@ class Search:
             return candidate
         return best
     
-    def minimax(self, node, depth, alpha, beta):
+    def minimax(self,  depth, alpha, beta):
         self.nodes += 1
         oldBest = None
 
         if self.allowed_time - (time.time() - self.start_time) < 0.05:
             raise RuntimeError("Out of time!")
         
-        if node.gethash() in self.tt:
-            if self.tt[node.gethash()][1] == depth:
-                return self.tt[node.gethash()][0]
-            oldBest = self.tt[node.gethash()][2]
+        if self.root.gethash() in self.tt:
+            if self.tt[self.root.gethash()][1] == depth:
+                return self.tt[self.root.gethash()][0]
+            oldBest = self.tt[self.root.gethash()][2]
 
-        myScore = node.score()
-        if depth == 0 or abs(myScore) == 10000 or len(node.legal_moves()) == 0:
+        myScore = self.root.score()
+        if depth == 0 or abs(myScore) == 10000 or len(self.root.move_gen()) == 0:
             self.leaves += 1
             return myScore
-        bestValue = 10001 * -1 * node.side_to_move
-        moveset = sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)])
+        bestValue = 10001 * -1 * self.root.side_to_move_adjusted()
+        moveset = sorted(self.root.move_gen(), key=lambda k: self.history[(k, depth)])
         if oldBest is not None and oldBest in moveset:
             moveset.remove(oldBest)
             moveset.insert(0, oldBest)
         # set our bestmove to none and update it as we search
         best = moveset[0]
         for child in moveset:
-            current_child = node.export()
-            current_child.make_move(child)
-            search = self.minimax(current_child, depth - 1, alpha, beta)
-            bestValue = self.pick_best(search, bestValue, node.side_to_move)
-            if node.side_to_move == 1 and bestValue > alpha:
+            self.root.make(child)
+            
+            search = self.minimax(depth - 1, alpha, beta)
+            bestValue = self.pick_best(search, bestValue, self.root.side_to_move_adjusted())
+            if self.root.side_to_move_adjusted() == 1 and bestValue > alpha:
                 alpha = bestValue
                 best = child
-            elif node.side_to_move == -1 and bestValue < beta:
+            elif self.root.side_to_move_adjusted() == -1 and bestValue < beta:
                 beta = bestValue
                 best = child
+            self.root.unmake(child)
             if beta <= alpha:
                 self.history[(child, depth)] -= 1
+                print("cut")
                 break
-        self.tt[node.gethash()] = (bestValue, depth, best)
+        self.tt[self.root.gethash()] = (bestValue, depth, best)
         return bestValue
-
-    # there is some bug where we miss losses when we use mtdf
-    # update, our alpha beta is improper for mtdf (storing results instead of bounds in tt)
-    def mtdf(self, root, depth, estimate):
-        g = estimate
-        upper =  9999999
-        lower = -9999999
-        while lower < upper:
-            beta = max(g, lower + 1)
-            g = self.minimax(root, depth, beta - 1, beta)
-            if g < beta:
-                upper = g
-            else:
-                lower = g
-        return g
-                
     
     def go(self):
         # clear the tt before starting a search also clear stats
@@ -110,30 +97,21 @@ class Search:
 
         bestMove = None
 
+        backup = deepcopy(self.root)
+
         score = 0
         
         depth = 0
         while True:
             try:
                 depth += 1
-                #score = self.mtdf(self.root, depth, score)
-                score = self.minimax(self.root, depth, -999999, 999999)
+                score = self.minimax(depth, -999999, 999999)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
             except:
                 break
-        PV = ""
-        current = self.root.export()
-        for i in range(0, 6):
-            try:
-                move = self.tt[current.gethash()][2]
-                PV = PV + str(move) + ","
-                current.make_move(move)
-            except:
-                PV = PV + "mate"
-                break
-        stderr.write(PV + "\n")
-        stderr.flush()
-        self.root.make_move(bestMove)
+            
+        self.root = backup
+        self.root.make(bestMove)
         return bestMove

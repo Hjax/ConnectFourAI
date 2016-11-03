@@ -43,7 +43,7 @@ class Root_Node:
             c += 1
         return c
 
-    def side_to_move(self):
+    def side_to_move_adjusted(self):
         return self.side_to_move + 1 / 2
 
     def col_height(self, column):
@@ -58,7 +58,7 @@ class Root_Node:
     # unmakes a move in a column (subtract one from column height to get the correct move)
     def unmake(self, column):
         self.side_to_move = not self.side_to_move
-        self.board[self.side_to_move] ^= (2**(6-column))*2**(7*(self.col_height(column) - 1))
+        self.board[self.side_to_move] ^= (2**(6-column))*2**(7*(max(self.col_height(column) - 1, 0)))
         self.value = self.board[0] | self.board[1]
 
     def is_won(self):
@@ -74,7 +74,7 @@ class Root_Node:
 
     # generates all of the legal moves in a position
     def move_gen(self):
-        return [x for x in range(7) if cols[x] & (self.board[0] & self.board[1]) != cols[x]]
+        return sorted([x for x in range(7) if cols[x] & (self.board[0] & self.board[1]) != cols[x]], key=lambda k: abs(3 - k))
 
 
     def find_threats(self):
@@ -169,7 +169,7 @@ if __name__ == "__main_1_" :
             stderr.write("Line: " + connectfour.root.line + "\n")
             stderr.flush()
             
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()
