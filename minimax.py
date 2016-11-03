@@ -1,5 +1,6 @@
 from sys import stderr, stdin, stdout
 import time, random
+from copy import deepcopy
 
 # we hit search explosion 19 ply before the end
 SEARCH_EXPLOSION = 19
@@ -40,44 +41,48 @@ class Search:
             return candidate
         return best
     
-    def minimax(self, node, depth, alpha, beta):
+    def minimax(self, depth, alpha, beta):
         self.nodes += 1
         oldBest = None
 
         if self.allowed_time - (time.time() - self.start_time) < 0.05:
             raise RuntimeError("Out of time!")
         
-        if node.gethash() in self.tt:
-            if self.tt[node.gethash()][1] == depth:
-                return self.tt[node.gethash()][0]
-            oldBest = self.tt[node.gethash()][2]
+        if self.root.gethash() in self.tt:
+            if self.tt[self.root.gethash()][1] == depth:
+                return self.tt[self.root.gethash()][0]
+            oldBest = self.tt[self.root.gethash()][2]
 
-        myScore = node.score()
-        if depth == 0 or abs(myScore) == 10000 or len(node.legal_moves()) == 0:
+        myScore = self.root.score()
+        if depth == 0 or abs(myScore) == 10000 or len(self.root.move_gen()) == 0:
             self.leaves += 1
             return myScore
-        bestValue = 10001 * -1 * node.side_to_move
-        moveset = sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)])
+        bestValue = 10001 * -1 * self.root.turn()
+        moveset = sorted(self.root.move_gen(), key=lambda k: self.history[(k, depth)])
         if oldBest is not None and oldBest in moveset:
             moveset.remove(oldBest)
             moveset.insert(0, oldBest)
         # set our bestmove to none and update it as we search
         best = moveset[0]
         for child in moveset:
-            current_child = node.export()
-            current_child.make_move(child)
-            search = self.minimax(current_child, depth - 1, alpha, beta)
-            bestValue = self.pick_best(search, bestValue, node.side_to_move)
-            if node.side_to_move == 1 and bestValue > alpha:
+            
+            self.root.make(child)
+            
+            search = self.minimax(depth - 1, alpha, beta)
+            # Turns are all swapped because make changed the turn...
+            bestValue = self.pick_best(search, bestValue, self.root.turn() * -1)
+            if self.root.turn() == -1 and bestValue > alpha:
                 alpha = bestValue
                 best = child
-            elif node.side_to_move == -1 and bestValue < beta:
+            elif self.root.turn() == 1 and bestValue < beta:
                 beta = bestValue
                 best = child
+                
+            self.root.unmake(child)
             if beta <= alpha:
                 self.history[(child, depth)] -= 1
                 break
-        self.tt[node.gethash()] = (bestValue, depth, best)
+        self.tt[self.root.gethash()] = (bestValue, depth, best)
         return bestValue
                 
     
@@ -96,28 +101,18 @@ class Search:
         bestMove = None
 
         score = 0
-        
+        backup = deepcopy(self.root)
         depth = 0
         while True:
-            try:
+            #try:
                 depth += 1
-                score = self.minimax(self.root, depth, -999999, 999999)
+                score = self.minimax(depth, -999999, 999999)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
-            except:
-                break
-        PV = ""
-        current = self.root.export()
-        for i in range(0, 6):
-            try:
-                move = self.tt[current.gethash()][2]
-                PV = PV + str(move) + ","
-                current.make_move(move)
-            except:
-                PV = PV + "mate"
-                break
-        stderr.write(PV + "\n")
-        stderr.flush()
-        self.root.make_move(bestMove)
+            #except:
+            #    break
+            
+        self.root = backup
+        self.root.make(bestMove)
         return bestMove

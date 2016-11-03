@@ -91,7 +91,7 @@ class Root_Node:
     def score(self):
         if self.is_won():
             # someone just won, return a score thats bad for the side to move
-            return -10000 * (self.side_to_move * 2 - 1)
+            return -10000 * self.turn()
 
         score = 0
 
