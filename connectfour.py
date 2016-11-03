@@ -68,7 +68,7 @@ class Root_Node:
 
     # generates all of the legal moves in a position
     def move_gen(self):
-        return sorted([x for x in range(7) if cols[x] & (self.board[0] | self.board[1]) != cols[x]], key=lambda k: abs(3 - k))
+        return sorted([x for x in range(7) if cols[x] & (self.value) != cols[x]], key=lambda k: abs(3 - k))
 
     def find_threats(self):
         threats = []
