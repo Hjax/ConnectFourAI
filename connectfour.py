@@ -28,6 +28,9 @@ class Root_Node:
         self.board = [0,0]
         self.value = 0
         self.side_to_move = True
+
+    def gethash(self):
+        return str(self.board)
         
     # according to here: http://www.valuedlessons.com/2009/01/popcount-in-python-with-benchmarks.html
     # this is the fastest way to do a popcnt in python with the number of bits i need
@@ -93,30 +96,25 @@ class Root_Node:
 
         blanks = self.popcount(self.value)
         threats = self.find_threats()
-#@profile
-def speed_test():
-    foo = Root_Node()
-    for x in range(0, 6):
-        start = time.time()
-        count = 0
-        while time.time() - start < 2:
-            count += 1
-            if foo.move_gen():
-                move = random.choice(foo.move_gen())
-                foo.make(move)
-                foo.score()
-            else:
-                foo = Root_Node()
-        
-        print(count / 2)
-        
-#foo = Root_Node()        
-#while True:
- ##   foo.make(int(raw_input()))
-   # newLineSplit(foo.board[not foo.side_to_move])
-   # print(foo.find_threats())
 
-speed_test()
+        score += len(filter(lambda x: x > 0, threats))
+        score += len(filter(lambda x: x < 0, threats))
+
+        immeadiate_threats = []
+        hanging_threats = []
+        for threat in threats:
+            if not self.is_hanging(threat):
+                immeadiate_threats.append(threat)
+            else:
+                hanging_threats.append(threat)
+
+        return score
+                
+    def display_board(self):
+        print()
+            
+        
+
 myBook = book()
 
 if __name__ == "__main_1_" :
@@ -162,17 +160,17 @@ if __name__ == "__main_1_" :
             stderr.write("Line: " + connectfour.root.line + "\n")
             stderr.flush()
             
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()
         connectfour.nodes = 0
-        connectfour.root.make_move(int(raw_input()))
-        connectfour.settings['current_time'] = 10000
-        connectfour.settings['timebank'] = 10000
-        connectfour.settings['time_per_move'] = 500
+        connectfour.root.make(int(raw_input()))
+        connectfour.settings['current_time'] = 100000
+        connectfour.settings['timebank'] = 100000
+        connectfour.settings['time_per_move'] = 5000
         connectfour.settings['round'] = 1
-        if myBook.inBook(connectfour.root.line):
+        if False:
             stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
             stderr.flush()
             stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))
