@@ -6,8 +6,6 @@ from minimax import Search
 from sys import stderr, stdin, stdout
 from book import book
 
-from profilehooks import profile
-
 win_conds = [15, 30, 60, 120, 1920, 3840, 7680, 15360, 245760, 491520, 983040, 1966080, 31457280, 62914560, 125829120, 251658240, 4026531840, 8053063680, 16106127360, 32212254720, 515396075520, 1030792151040, 2061584302080, 4123168604160, 2113665, 4227330, 8454660, 16909320, 33818640, 67637280, 135274560, 270549120, 541098240, 1082196480, 2164392960, 4328785920, 8657571840, 17315143680, 34630287360, 69260574720, 138521149440, 277042298880, 554084597760, 1108169195520, 2216338391040, 16843009, 2130440, 33686018, 4260880, 67372036, 8521760, 134744072, 17043520, 2155905152, 272696320, 4311810304, 545392640, 8623620608, 1090785280, 17247241216, 2181570560, 275955859456, 34905128960, 551911718912, 69810257920, 1103823437824, 139620515840, 2207646875648, 279241031680]   
 win_conds = sorted(win_conds)
 
@@ -15,7 +13,19 @@ win_conds = sorted(win_conds)
 # popcnt of col & board = number of pieces in that board
 cols = [2216338399296, 1108169199648, 554084599824, 277042299912, 138521149956, 69260574978, 34630287489]
 
- 
+# according to here: http://www.valuedlessons.com/2009/01/popcount-in-python-with-benchmarks.html
+# this is the fastest way to do a popcnt in python with the number of bits i need
+popcountmemo = {}
+def popcount(v):
+    original = v
+    if v not in popcountmemo:
+        c = 0
+        while v:
+            v &= v - 1
+            c += 1
+        popcountmemo[original] = c
+    return popcountmemo[original]
+
 class Root_Node:
     def __init__(self):
         # initialize the bitboards for each side
@@ -25,21 +35,12 @@ class Root_Node:
 
     def gethash(self):
         return str(self.board)
-        
-    # according to here: http://www.valuedlessons.com/2009/01/popcount-in-python-with-benchmarks.html
-    # this is the fastest way to do a popcnt in python with the number of bits i need
-    def popcount(self, v):
-        c = 0
-        while v:
-            v &= v - 1
-            c += 1
-        return c
 
     def turn(self):
         return (self.side_to_move * 2 - 1)
 
     def col_height(self, column):
-        return self.popcount(cols[column] & self.value)
+        return popcount(cols[column] & self.value)
 
     # makes a move in a column
     def make(self, column):
@@ -53,15 +54,6 @@ class Root_Node:
         self.board[self.side_to_move] ^= (2**(6-column))*2**(7*(max(self.col_height(column) - 1, 0)))
         self.value = self.board[0] | self.board[1]
 
-    def is_won(self):
-        for i in win_conds:
-            if i > self.value:
-                break
-            # if the board is won, that means the person who just moved won
-            if self.board[not self.side_to_move] & i == i:
-                return True
-        return False
-
     # takes a power of two (a single square) and checks if the square below it is empty or not
     def is_hanging(self, square):
         return not (square / 2**7) & self.value
@@ -69,43 +61,46 @@ class Root_Node:
     # generates all of the legal moves in a position
     def move_gen(self):
         return sorted([x for x in range(7) if cols[x] & (self.value) != cols[x]], key=lambda k: abs(3 - k))
+    
+    def score(self):
+        score = 0
 
-    def find_threats(self):
-        threats = []
+        # iterate over win conds to find threats and check for wins
+        immeadiate_threats = []
+        hanging_threats = []
         for i in win_conds:
             if i > self.value:
                 break
             # side to move == 1 goes first, so board[1]
             red = self.board[0] & i
             blue = self.board[1] & i
-            if blue == 0 and self.popcount(red) == 3:
-                threats.append(red ^ i * -1)
-            elif red == 0 and self.popcount(blue) == 3:
-                threats.append(blue ^ i)
-        return threats
-    
-    def score(self):
-        if self.is_won():
-            # someone just won, return a score thats bad for the side to move
-            return -10000 * self.turn()
+            if red == i or blue == i:
+                # someone just won, return a score thats bad for the side to move
+                return -10000 * self.turn()
+            if blue == 0 and popcount(red) == 3:
+                threat = red ^ i * -1
+                if not self.is_hanging(threat):
+                    immeadiate_threats.append(threat)
+                    if not self.side_to_move:
+                        return -9999
+                else:
+                    hanging_threats.append(threat)
+            elif red == 0 and popcount(blue) == 3:
+                threat = blue ^ i
+                if not self.is_hanging(threat):
+                    immeadiate_threats.append(threat)
+                    # theat is > 0 so we just check if self.side_to_move, since not self.side_to_move just blundered
+                    if self.side_to_move:
+                        return 9999
+                else:
+                    hanging_threats.append(threat)
 
-        score = 0
+        blanks = popcount(self.value)
 
-        blanks = self.popcount(self.value)
-        threats = self.find_threats()
+        threats = immeadiate_threats + hanging_threats
 
         score += len(filter(lambda x: x > 0, threats))
         score -= score - len(threats)
-
-        immeadiate_threats = []
-        hanging_threats = []
-        for threat in threats:
-            if not self.is_hanging(threat):
-                immeadiate_threats.append(threat)
-                if threat > 0 and self.side_to_move or threat < 0 and not self.side_to_move:
-                    return 9999 * self.turn()
-            else:
-                hanging_threats.append(threat)
 
         return score
                 
