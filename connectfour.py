@@ -1,8 +1,11 @@
+from __future__ import print_function
+
 import math, random, time
 import copy
 from minimax import Search
 from sys import stderr, stdin, stdout
 from book import book
+
 
 #from profilehooks import profile
 
@@ -12,7 +15,7 @@ def newLineSplit(string):
     chunks = [string[i:i+n] for i in range(0, len(string), n)]
     for i in chunks:
         print(i)
-    print ""
+    print("")
 
 win_conds = [15, 30, 60, 120, 1920, 3840, 7680, 15360, 245760, 491520, 983040, 1966080, 31457280, 62914560, 125829120, 251658240, 4026531840, 8053063680, 16106127360, 32212254720, 515396075520, 1030792151040, 2061584302080, 4123168604160, 2113665, 4227330, 8454660, 16909320, 33818640, 67637280, 135274560, 270549120, 541098240, 1082196480, 2164392960, 4328785920, 8657571840, 17315143680, 34630287360, 69260574720, 138521149440, 277042298880, 554084597760, 1108169195520, 2216338391040, 16843009, 2130440, 33686018, 4260880, 67372036, 8521760, 134744072, 17043520, 2155905152, 272696320, 4311810304, 545392640, 8623620608, 1090785280, 17247241216, 2181570560, 275955859456, 34905128960, 551911718912, 69810257920, 1103823437824, 139620515840, 2207646875648, 279241031680]
 
@@ -111,8 +114,16 @@ class Root_Node:
         return score
                 
     def display_board(self):
-        print()
-            
+        for i in range(6):
+            for j in range(7):
+                space = 2**((6 - j) + ((5 - i) * 7))
+                if self.board[0] & space == space:
+                    print("-1, ", end="")
+                elif self.board[1] & space == space:
+                    print("01, ", end="")
+                else:
+                    print("00, ", end="")
+            print("")
         
 
 myBook = book()
@@ -179,6 +190,6 @@ if __name__ == "__main__" :
         else:  
             start = time.time()
             connectfour.go()
-            print "searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start))
+            print("searched %s nodes in %s seconds" % (str(connectfour.nodes), str(time.time() - start)))
 
 
