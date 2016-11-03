@@ -6,18 +6,10 @@ from minimax import Search
 from sys import stderr, stdin, stdout
 from book import book
 
-
-#from profilehooks import profile
-
-def newLineSplit(string):
-    string = bin(string)[2:].zfill(42)
-    n = 7
-    chunks = [string[i:i+n] for i in range(0, len(string), n)]
-    for i in chunks:
-        print(i)
-    print("")
+from profilehooks import profile
 
 win_conds = [15, 30, 60, 120, 1920, 3840, 7680, 15360, 245760, 491520, 983040, 1966080, 31457280, 62914560, 125829120, 251658240, 4026531840, 8053063680, 16106127360, 32212254720, 515396075520, 1030792151040, 2061584302080, 4123168604160, 2113665, 4227330, 8454660, 16909320, 33818640, 67637280, 135274560, 270549120, 541098240, 1082196480, 2164392960, 4328785920, 8657571840, 17315143680, 34630287360, 69260574720, 138521149440, 277042298880, 554084597760, 1108169195520, 2216338391040, 16843009, 2130440, 33686018, 4260880, 67372036, 8521760, 134744072, 17043520, 2155905152, 272696320, 4311810304, 545392640, 8623620608, 1090785280, 17247241216, 2181570560, 275955859456, 34905128960, 551911718912, 69810257920, 1103823437824, 139620515840, 2207646875648, 279241031680]   
+win_conds = sorted(win_conds)
 
 # we can deduce columns with bitboard math as well:
 # popcnt of col & board = number of pieces in that board
@@ -63,6 +55,8 @@ class Root_Node:
 
     def is_won(self):
         for i in win_conds:
+            if i > self.value:
+                break
             # if the board is won, that means the person who just moved won
             if self.board[not self.side_to_move] & i == i:
                 return True
@@ -79,6 +73,8 @@ class Root_Node:
     def find_threats(self):
         threats = []
         for i in win_conds:
+            if i > self.value:
+                break
             # side to move == 1 goes first, so board[1]
             red = self.board[0] & i
             blue = self.board[1] & i
@@ -88,6 +84,7 @@ class Root_Node:
                 threats.append(blue ^ i)
         return threats
 
+    #@profile
     def score(self):
         if self.is_won():
             # someone just won, return a score thats bad for the side to move
