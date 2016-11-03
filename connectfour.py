@@ -83,8 +83,7 @@ class Root_Node:
             elif red == 0 and self.popcount(blue) == 3:
                 threats.append(blue ^ i)
         return threats
-
-    #@profile
+    
     def score(self):
         if self.is_won():
             # someone just won, return a score thats bad for the side to move
@@ -96,19 +95,17 @@ class Root_Node:
         threats = self.find_threats()
 
         score += len(filter(lambda x: x > 0, threats))
-        score -= len(filter(lambda x: x < 0, threats))
+        score -= score - len(threats)
 
         immeadiate_threats = []
         hanging_threats = []
         for threat in threats:
             if not self.is_hanging(threat):
                 immeadiate_threats.append(threat)
+                if threat > 0 and self.side_to_move or threat < 0 and not self.side_to_move:
+                    return 9999 * self.turn()
             else:
                 hanging_threats.append(threat)
-
-        for threat in immeadiate_threats:
-            if threat > 0 and self.side_to_move or threat < 0 and not self.side_to_move:
-                return 9999 * self.turn()
 
         return score
                 
