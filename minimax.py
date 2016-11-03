@@ -69,16 +69,17 @@ class Search:
             self.root.make(child)
             
             search = self.minimax(depth - 1, alpha, beta)
-            # Turns are all swapped because make changed the turn...
-            bestValue = self.pick_best(search, bestValue, self.root.turn() * -1)
-            if self.root.turn() == -1 and bestValue > alpha:
-                alpha = bestValue
-                best = child
-            elif self.root.turn() == 1 and bestValue < beta:
-                beta = bestValue
-                best = child
                 
             self.root.unmake(child)
+            
+            bestValue = self.pick_best(search, bestValue, self.root.turn())
+            if self.root.turn() == 1 and bestValue > alpha:
+                alpha = bestValue
+                best = child
+            elif self.root.turn() == -1 and bestValue < beta:
+                beta = bestValue
+                best = child
+
             if beta <= alpha:
                 self.history[(child, depth)] -= 1
                 break
@@ -106,10 +107,12 @@ class Search:
         while True:
             #try:
                 depth += 1
-                score = self.minimax(depth, -999999, 999999)
+                score = self.minimax(10, -999999, 999999)
                 stderr.write("[INFO] depth %s score %s \n" % (str(depth), score))
                 bestMove = self.tt[self.root.gethash()][2]
                 stderr.flush()
+                if depth > 20:
+                    break
             #except:
             #    break
             
