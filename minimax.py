@@ -1,8 +1,9 @@
 from sys import stderr, stdin, stdout
 import time, random
 
-# we hit search explosion 19 ply before the end
-SEARCH_EXPLOSION = 19
+
+# we hit search explosion 21 ply before the end
+SEARCH_EXPLOSION = 21
 
 class Search:
     def __init__(self, root):
@@ -95,7 +96,6 @@ class Search:
                 lower = g
         return g
                 
-    
     def go(self):
         # clear the tt before starting a search also clear stats
         #self.tt = {}

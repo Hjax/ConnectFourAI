@@ -43,18 +43,23 @@ class book:
                     "333332": "2",
                     "333333": "2",
                     "3333332": "1",
+                    "3333311": "1",
+                    "33333111": "1",
                     "33333321": "5",
                     "333333215": "4",
+                    "3333302154": "1",
                     "3333332154": "4",
-                    "33333321544": "4"
+                    "33333321544": "4",
+                    "333330215415": "2",
+                    "33333111155555": "1"
                     }
         
     def reverse(self, line):
         return "".join([str(6 - int(x)) for x in line])
     def inBook(self, line):
-        return line in self.book.keys() or self.reverse(line) in self.book.keys()
+        return line in list(self.book.keys()) or self.reverse(line) in list(self.book.keys())
     def getMove(self, line):
-        if line in self.book.keys():
+        if line in list(self.book.keys()):
             return self.book[line]
         else:
             return self.reverse(self.book[self.reverse(line)])
