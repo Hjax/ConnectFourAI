@@ -31,7 +31,6 @@ class grabber:
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,x,y,0,0)
 
     def get_board(self):
-        self.capture()
         columns = [0,0,0,0,0,0,0]
         for i in range(0, 6):
             for j in range(0, 7):
@@ -51,7 +50,6 @@ class grabber:
             self.click_back()
 
     def enter_next_move(self):
-        self.capture()
         if self.get_pixel_color(585, 875) == (166, 165, 201):
             self.click(585, 875)
             self.click(585, 875)
@@ -90,14 +88,17 @@ class grabber:
 
     def switch_tab(self, tab):
         self.click(50 + 83*tab, 15)
+        time.sleep(0.05)
             
-foo = grabber()
+
 transpose = []
 bk = book()
 bk.book = {}
 
-def generate(node, max_depth, printer=False):
+found = 0
 
+def generate(node, max_depth, printer=False):
+    global found
     if max_depth <= 0:
         return
     if node.gethash() in transpose:
@@ -111,14 +112,17 @@ def generate(node, max_depth, printer=False):
     checker.clear_history()
     checker.allowed_time = 5
     checker.start_time = time.time()
-    if abs(checker.minimax(node, 2, -999999, 999999)) > 5000:
+    if abs(checker.minimax(node, 4, -999999, 999999)) > 5000:
         #print("Aborting line due to bad score")
         return
     transpose.append(node.gethash())
     # get the best move for this position
     #bk.book[node.line] = str(foo.get_best_move(node.line))
     lock.acquire()
-    bk.book[node.line] = ""
+    if node.line not in bk.opening_book:
+        print(found)
+        found += 1
+        bk.book[node.line] = ""
     lock.release()
     for move in node.legal_moves():
         if printer:
@@ -129,10 +133,11 @@ def generate(node, max_depth, printer=False):
 
 def do_sleep():
     lock.release()
-    time.sleep(0.8)
+    time.sleep(1.1)
     lock.acquire()
 
 def worker():
+    foo = grabber()
     while True:
 
         my_tab = foo.get_tab()
@@ -143,7 +148,7 @@ def worker():
             for key in bk.book:
                 if bk.book[key] == "":
                     my_key = key
-                    bk.book.pop(key, None)
+                    bk.book[key] = "taken"
                     break
             lock.release()
             time.sleep(0.05)
@@ -154,16 +159,24 @@ def worker():
         foo.enter_board_string(my_key)
         do_sleep()
         foo.switch_tab(my_tab)
+        time.sleep(0.1)
+        foo.capture()
+        lock.release()
         first = foo.get_board()
+        lock.acquire()
+        foo.switch_tab(my_tab)
         foo.enter_next_move()
         do_sleep()
         foo.switch_tab(my_tab)
+        time.sleep(0.1)
+        foo.capture()
+        lock.release()
         second = foo.get_board()
-
         for i in range(0, 7):
             if first[i] != second[i]:
+                lock.acquire()
                 bk.book[my_key] = str(i)
-        lock.release()
+                lock.release()
         foo.release_tab(my_tab)
 
 
@@ -173,7 +186,26 @@ for i in range(0, NUM_TABS):
     threads[i].daemon = True
     threads[i].start()
 
-generate(Root_Node(), 4, False)
+startt = time.time()
+generate(Root_Node(), 7, True)
+
 while True:
     time.sleep(1)
+    lock.acquire()
+    done = True
+    counter = 0
+    for key in bk.book:
+        if bk.book[key] == "" or bk.book[key] == "taken" and key != "":
+            counter += 1
+            done = False
+    lock.release()
+    print(counter)
+    if done:
+        break
+    
+print(time.time() - startt)
 print(len(bk.book))
+
+filer = open("output.txt", "w")
+filer.write(str(bk.book))
+filer.close()

@@ -4,7 +4,7 @@ from minimax import Search
 from sys import stderr, stdin, stdout
 from book import book
 # so notes on keeping track of important things
-
+# python3
 # runs can be updated whenever a peg is placed
 # threats need to be updated in a 6 by 6 box around every placed peg, this is slow as dirt
 
@@ -45,7 +45,7 @@ class Root_Node:
     
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
-            if self.board[i // 7][i % 7] == 0 and position[i] in ['1', '2']:
+            if self.board[i // 7][i % 7] == 0 and position[i] in ['0', '1', '2']:
                 self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
     
     def update_direction(self, square, direction):
@@ -270,7 +270,7 @@ if __name__ == "__main__" :
         connectfour.settings['timebank'] = 10000
         connectfour.settings['time_per_move'] = 500
         connectfour.settings['round'] = 1
-        if False and myBook.inBook(connectfour.root.line):
+        if myBook.inBook(connectfour.root.line):
             stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
             stderr.flush()
             stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))
