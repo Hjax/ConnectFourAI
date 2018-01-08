@@ -3,7 +3,6 @@ import copy
 from minimax import Search
 from sys import stderr, stdin, stdout
 from book import book
-
 # so notes on keeping track of important things
 
 # runs can be updated whenever a peg is placed
@@ -40,24 +39,24 @@ class Root_Node:
 
         # becomes true when there is a four in a row on the board
         self.won = False
-
-        self.hash = None
         
     def gethash(self):
-        return str(self.board)
+        return hash(tuple(map(tuple, self.board)))
     
     def update(self, position): # takes a positon from the engine and updates our internal position
         for i in range(0, 42):
             if self.board[i // 7][i % 7] == 0 and position[i] in ['1', '2']:
                 self.make_move(i % 7) # TODO theres a faster way to do this, but the difference is small
     
-    def update_direction(self, square, direction): 
-        path = self.traverse(square, direction)
-        current_loc = next(path)
+    def update_direction(self, square, direction):
         base_board_value = self.board[square[0]][square[1]]
         starting_value = 1
         if math.copysign(1, self.runs[square][opposite[direction]]) == base_board_value:
             starting_value = abs(self.runs[square][opposite[direction]]) + 1
+        if starting_value + stretch_cache[(square, direction)] < 4:
+            return
+        path = self.traverse(square, direction)
+        current_loc = next(path)
         while self.is_valid(current_loc):
             current_board_value = self.board[current_loc[0]][current_loc[1]]
             if current_board_value == 0:
@@ -199,16 +198,27 @@ class Root_Node:
         child.columns = self.columns[:]
         return child
 
+def on_board(square):
+    return 0 <= square[0] < 6 and 0 <= square[1] < 7
+
 directions_cache = {}
+stretch_cache = {}
 starter = Root_Node()
 for row in range(0, 6):
     for column in range(0, 7):
         directions_cache[(row, column)] = [x for x in dmap if 0 <= starter.traverse_step((row, column), x)[0] < 6
                                            and 0 <= starter.traverse_step((row, column), x)[1] < 7]
+        for direction in dmap:
+            current = 0
+            path = starter.traverse((row, column), direction)
+            while on_board(next(path)):
+                current += 1
+                stretch_cache[((row, column), direction)] = current
+            
 
 myBook = book()
 
-if __name__ == "__main__" :
+if __name__ == "__main_1_" :
     connectfour = Search(Root_Node())
     connectfour.settings['current_time'] = 10000
     connectfour.settings['timebank'] = 10000
@@ -250,7 +260,7 @@ if __name__ == "__main__" :
             stderr.write("Completed Round: " + str(connectfour.settings["round"]) + "\n")
             stderr.write("Line: " + connectfour.root.line + "\n")
             stderr.flush()
-if __name__ == "__main_1_" :
+if __name__ == "__main__" :
     connectfour = Search(Root_Node())
     while True:
         connectfour.root.display_board()
@@ -260,7 +270,7 @@ if __name__ == "__main_1_" :
         connectfour.settings['timebank'] = 10000
         connectfour.settings['time_per_move'] = 500
         connectfour.settings['round'] = 1
-        if myBook.inBook(connectfour.root.line):
+        if False and myBook.inBook(connectfour.root.line):
             stderr.write("Book Move: %s\n" % (myBook.getMove(connectfour.root.line)))
             stderr.flush()
             stdout.write("place_disc %s \n" % (myBook.getMove(connectfour.root.line)))

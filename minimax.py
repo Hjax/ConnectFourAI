@@ -47,21 +47,30 @@ class Search:
 
         if self.allowed_time - (time.time() - self.start_time) < 0.05:
             raise RuntimeError("Out of time!")
-        
-        if node.gethash() in self.tt:
-            if self.tt[node.gethash()][1] == depth:
-                return self.tt[node.gethash()][0]
-            oldBest = self.tt[node.gethash()][2]
 
-        myScore = node.score()
-        if depth == 0 or abs(myScore) == 10000 or len(node.legal_moves()) == 0:
+
+        
+        if depth == 0 or node.won:
             self.leaves += 1
-            return myScore
+            return node.score()
+        else:
+            moves = node.legal_moves()
+            if len(moves) == 0:
+                self.leaves += 1
+                return node.score()
+        
         bestValue = 10001 * -1 * node.side_to_move
-        moveset = sorted(node.legal_moves(), key=lambda k: self.history[(k, depth)])
+
+        my_hash = node.gethash()
+        if my_hash in self.tt:
+            if self.tt[my_hash][1] == depth:
+                return self.tt[my_hash][0]
+            oldBest = self.tt[my_hash][2]
+
+        moveset = sorted(moves, key=lambda k: self.history[(k, depth)])
         if oldBest is not None and oldBest in moveset:
-            moveset.remove(oldBest)
-            moveset.insert(0, oldBest)
+            moveset.insert(0, moveset.pop(moveset.index(oldBest)))
+
         # set our bestmove to none and update it as we search
         best = moveset[0]
         for child in moveset:
